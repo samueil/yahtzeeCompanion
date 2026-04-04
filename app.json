@@ -1,0 +1,12 @@
+{
+  "name": "yahtzeeCompanion",
+  "slug": "yahtzeeCompanion",
+  "expo": {
+    "name": "yahtzeeCompanion",
+    "slug": "yahtzeeCompanion",
+    "orientation": "portrait",
+    "android": {
+      "package": "com.anonymous.yahtzeeCompanion"
+    }
+  }
+}
