@@ -24,7 +24,6 @@ module.exports = {
     'import/no-default-export': 'error',
   },
   parserOptions: {
-    requireConfigFile: false,
     ecmaVersion: 2020, // Or whatever modern JS version you're targeting
     sourceType: 'module', // Important for module syntax
   },

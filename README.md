@@ -1,4 +1,4 @@
-# Yahtzee Companion
+# Yahtzee Companion 🎲
 
 A React Native (Expo) app that acts as a digital companion for physical Yahtzee games. Features a digital scorecard and an AR-powered dice scanner using a custom YOLOv8 machine learning model to automatically count your dice rolls.
 
@@ -66,5 +66,6 @@ npm run web
 - `src/domain/` - Typescript interfaces for the ML pipeline (`DiceDetection`).
 
 ## ⚠️ Known Issues / TODO
-- **Styling Refactor:** Migrate the current `StyleSheet.create` styling objects to [NativeWind](https://www.nativewind.dev/) (Tailwind CSS for React Native) to improve code maintainability and allow for easier cross-platform styling.
+- **Styling Dice:** The Dice are not correctly styled yet.
+- **Game Logic:** The Game Logic is still very faulty. Setup Unit-Tests to verify the logic and fix it.
 - **YOLOv8 Output Parser Tuning:** The C++ worklet currently extracts bounding boxes using a hardcoded tensor parser designed for an exported YOLOv8 shape. Depending on the exact `.tflite` model used, the `numFeatures` vs `numAnchors` transposed shape may need calibration to ensure bounding boxes render at the correct sizes.

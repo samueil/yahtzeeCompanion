@@ -1,6 +1,6 @@
 import { X } from 'lucide-react-native';
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -24,41 +24,41 @@ export const DiceScanner = ({
   };
 
   return (
-    <View style={styles.scannerContainer}>
-      <View style={styles.webCameraMock}>
-        <Text style={styles.webCameraText}>
+    <View className="absolute inset-0 bg-black z-50">
+      <View className="flex-1 justify-center items-center bg-slate-800">
+        <Text className="text-muted text-lg font-bold mb-2">
           [ Camera not available on Web ]
         </Text>
-        <Text style={styles.webCameraSubText}>Using simulated dice rolls.</Text>
+        <Text className="text-muted text-sm">Using simulated dice rolls.</Text>
       </View>
 
-      <Pressable onPress={onClose} style={styles.closeButton}>
+      <Pressable
+        onPress={onClose}
+        className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+      >
         <X size={32} color={'white'} />
       </Pressable>
 
-      <View style={styles.captureArea}>
+      <View className="absolute bottom-10 left-0 right-0 items-center justify-center z-10">
         <Pressable
           onPress={handleSimulatedScan}
           disabled={!isCameraReady}
-          style={[
-            styles.captureButton,
+          className={`w-16 h-16 rounded-full border-4 justify-center items-center ${
             isCameraReady
-              ? styles.captureButtonActive
-              : styles.captureButtonDisabled,
-          ]}
+              ? 'border-success bg-success/10'
+              : 'border-white/40 bg-white/5'
+          }`}
         >
           <View
-            style={[
-              styles.captureInnerButton,
-              isCameraReady && styles.captureInnerButtonActive,
-            ]}
+            className={`w-12 h-12 rounded-full ${
+              isCameraReady ? 'bg-white' : 'bg-white/20'
+            }`}
           />
         </Pressable>
         <Text
-          style={[
-            styles.captureHint,
-            isCameraReady && styles.captureHintActive,
-          ]}
+          className={`text-xs font-mono mt-2.5 text-white opacity-70 ${
+            isCameraReady && 'text-success opacity-100 font-bold'
+          }`}
         >
           {isCameraReady ? 'TAP TO SIMULATE' : 'Waiting for dice...'}
         </Text>
@@ -66,88 +66,3 @@ export const DiceScanner = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  scannerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'black',
-    zIndex: 50,
-  },
-  webCameraMock: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-  },
-  webCameraText: {
-    color: '#94a3b8',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  webCameraSubText: {
-    color: '#64748b',
-    fontSize: 14,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 20,
-    zIndex: 10,
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 32,
-  },
-  captureArea: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 4,
-    borderColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  captureButtonActive: {
-    borderColor: '#00FF00',
-    backgroundColor: 'rgba(0, 255, 0, 0.1)',
-  },
-  captureButtonDisabled: {
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  captureInnerButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  captureInnerButtonActive: {
-    backgroundColor: 'white',
-  },
-  captureHint: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    marginTop: 10,
-    color: 'white',
-    opacity: 0.7,
-  },
-  captureHintActive: {
-    color: '#00FF00',
-    opacity: 1,
-    fontWeight: 'bold',
-  },
-});
