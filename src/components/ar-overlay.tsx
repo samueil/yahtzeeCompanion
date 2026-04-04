@@ -1,9 +1,7 @@
-// src/components/AROverlay.tsx
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-tetection';
 
-// Props for the AROverlay component
 interface AROverlayProps {
   detections: DiceDetection[];
   targetCount: number;

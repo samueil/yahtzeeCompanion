@@ -1,15 +1,6 @@
 import { X } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Dimensions,
-  PermissionsAndroid,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import {
   Camera,
@@ -239,44 +230,54 @@ export const DiceScanner = ({
 
   if (!device && !permissionError)
     return (
-      <View style={styles.scannerContainer}>
-        <Text style={styles.centerText}>Loading camera...</Text>
-        <Pressable onPress={onClose} style={styles.closeButton}>
+      <View className="absolute inset-0 bg-black z-50">
+        <Text className="flex-1 justify-center items-center text-white text-lg">
+          Loading camera...
+        </Text>
+        <Pressable
+          onPress={onClose}
+          className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+        >
           <X size={32} color={'white'} />
         </Pressable>
       </View>
     );
   if (permissionError)
     return (
-      <View style={styles.scannerContainer}>
-        <View style={styles.container}>
-          <Text style={styles.errorText}>Camera permission denied.</Text>
-          <View style={{ alignItems: 'center', marginTop: 20 }}>
+      <View className="absolute inset-0 bg-black z-50">
+        <View className="flex-1 bg-black relative">
+          <Text className="text-destructive text-center text-lg my-5">
+            Camera permission denied.
+          </Text>
+          <View className="items-center mt-5">
             <Pressable
               onPress={handleSimulatedScan}
-              style={styles.captureButton}
+              className="w-16 h-16 rounded-full border-4 border-white justify-center items-center bg-white/10"
             >
-              <View style={styles.captureInnerButton} />
+              <View className="w-12 h-12 rounded-full bg-white/20" />
             </Pressable>
           </View>
-          <Text style={styles.hintText}>
+          <Text className="text-white text-center text-sm mt-2.5">
             Please enable camera access in settings to scan real dice.
           </Text>
-          <Text style={styles.hintText}>
+          <Text className="text-white text-center text-sm mt-2.5">
             Tap the button above to simulate a roll instead.
           </Text>
         </View>
-        <Pressable onPress={onClose} style={styles.closeButton}>
+        <Pressable
+          onPress={onClose}
+          className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+        >
           <X size={32} color={'white'} />
         </Pressable>
       </View>
     );
 
   return (
-    <View style={styles.scannerContainer}>
+    <View style={StyleSheet.absoluteFill} className="bg-black z-50">
       <Camera
         style={StyleSheet.absoluteFill}
-        device={device}
+        device={device!}
         isActive={true}
         pixelFormat="rgb"
         frameProcessor={frameProcessor}
@@ -287,33 +288,33 @@ export const DiceScanner = ({
         onReady={setIsCameraReady}
       />
 
-      <Pressable onPress={onClose} style={styles.closeButton}>
+      <Pressable
+        onPress={onClose}
+        className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+      >
         <X size={32} color={'white'} />
       </Pressable>
 
-      <View style={styles.captureArea}>
+      <View className="absolute bottom-10 left-0 right-0 items-center justify-center z-10">
         <Pressable
           onPress={handleSimulatedScan}
           disabled={!isCameraReady}
-          style={[
-            styles.captureButton,
+          className={`w-16 h-16 rounded-full border-4 justify-center items-center ${
             isCameraReady
-              ? styles.captureButtonActive
-              : styles.captureButtonDisabled,
-          ]}
+              ? 'border-success bg-success/10'
+              : 'border-white/40 bg-white/5'
+          }`}
         >
           <View
-            style={[
-              styles.captureInnerButton,
-              isCameraReady && styles.captureInnerButtonActive,
-            ]}
+            className={`w-12 h-12 rounded-full ${
+              isCameraReady ? 'bg-white' : 'bg-white/20'
+            }`}
           />
         </Pressable>
         <Text
-          style={[
-            styles.captureHint,
-            isCameraReady && styles.captureHintActive,
-          ]}
+          className={`text-xs font-mono mt-2.5 text-white opacity-70 ${
+            isCameraReady && 'text-success opacity-100 font-bold'
+          }`}
         >
           {isCameraReady ? 'TAP TO CAPTURE' : 'Waiting for dice...'}
         </Text>
@@ -321,96 +322,3 @@ export const DiceScanner = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-    position: 'relative',
-  },
-  centerText: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: 'white',
-    fontSize: 18,
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    fontSize: 18,
-    marginVertical: 20,
-  },
-  hintText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 14,
-    marginTop: 10,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 20,
-    zIndex: 10,
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 32,
-  },
-  captureArea: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 4,
-    borderColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  captureButtonActive: {
-    borderColor: '#00FF00',
-    backgroundColor: 'rgba(0, 255, 0, 0.1)',
-  },
-  captureButtonDisabled: {
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  captureInnerButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  captureInnerButtonActive: {
-    backgroundColor: 'white',
-  },
-  captureHint: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    marginTop: 10,
-    color: 'white',
-    opacity: 0.7,
-  },
-  captureHintActive: {
-    color: '#00FF00',
-    opacity: 1,
-    fontWeight: 'bold',
-  },
-  scannerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'black',
-    zIndex: 50,
-  },
-});
