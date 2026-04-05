@@ -1,13 +1,16 @@
 name: CI Pipeline
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
   verify-and-test:
-    name: Verify, Lint, and Test
+    name: Verify, Lint, Test, Build
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +34,6 @@ jobs:
 
       - name: Run Tests
         run: npm test
+
+      - name: Check App Bundle
+        run: npm run build:check
