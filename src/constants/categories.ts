@@ -1,4 +1,6 @@
-export const CATEGORIES = {
+import { Category } from '../domain/category';
+
+export const CATEGORIES: Record<'UPPER' | 'LOWER', Category[]> = {
   UPPER: [
     { id: 'aces', label: 'Aces', val: 1 },
     { id: 'twos', label: 'Twos', val: 2 },

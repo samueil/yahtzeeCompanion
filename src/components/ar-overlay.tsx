@@ -31,22 +31,15 @@ export const AROverlay = ({
       {detections.map((det, index) => (
         <View
           key={index}
+          className="absolute items-center justify-center border-2 border-[rgba(0,255,0,0.7)] bg-[rgba(0,255,0,0.1)]"
           style={{
-            position: 'absolute',
             left: det.x,
             top: det.y,
             width: det.width,
             height: det.height,
-            borderWidth: 2,
-            borderColor: 'rgba(0, 255, 0, 0.7)', // Green bounding box
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 255, 0, 0.1)', // Semi-transparent overlay
           }}
         >
-          <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>
-            {det.value}
-          </Text>
+          <Text className="text-xs font-bold text-white">{det.value}</Text>
         </View>
       ))}
     </View>

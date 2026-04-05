@@ -1,4 +1,4 @@
-import { X } from 'lucide-react-native';
+import { XIcon } from 'lucide-nativewind';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -24,40 +24,40 @@ export const DiceScanner = ({
   };
 
   return (
-    <View className="absolute inset-0 bg-black z-50">
-      <View className="flex-1 justify-center items-center bg-slate-800">
-        <Text className="text-muted text-lg font-bold mb-2">
+    <View className="absolute inset-0 z-50 bg-black">
+      <View className="flex-1 items-center justify-center bg-slate-800">
+        <Text className="mb-2 text-lg font-bold text-muted">
           [ Camera not available on Web ]
         </Text>
-        <Text className="text-muted text-sm">Using simulated dice rolls.</Text>
+        <Text className="text-sm text-muted">Using simulated dice rolls.</Text>
       </View>
 
       <Pressable
         onPress={onClose}
-        className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+        className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
       >
-        <X size={32} color={'white'} />
+        <XIcon size={32} color={'white'} />
       </Pressable>
 
-      <View className="absolute bottom-10 left-0 right-0 items-center justify-center z-10">
+      <View className="absolute inset-x-0 bottom-10 z-10 items-center justify-center">
         <Pressable
           onPress={handleSimulatedScan}
           disabled={!isCameraReady}
-          className={`w-16 h-16 rounded-full border-4 justify-center items-center ${
+          className={`size-16 items-center justify-center rounded-full border-4 ${
             isCameraReady
               ? 'border-success bg-success/10'
               : 'border-white/40 bg-white/5'
           }`}
         >
           <View
-            className={`w-12 h-12 rounded-full ${
+            className={`size-12 rounded-full ${
               isCameraReady ? 'bg-white' : 'bg-white/20'
             }`}
           />
         </Pressable>
         <Text
-          className={`text-xs font-mono mt-2.5 text-white opacity-70 ${
-            isCameraReady && 'text-success opacity-100 font-bold'
+          className={`mt-2.5 font-mono text-xs text-white opacity-70 ${
+            isCameraReady && 'font-bold text-success opacity-100'
           }`}
         >
           {isCameraReady ? 'TAP TO SIMULATE' : 'Waiting for dice...'}
