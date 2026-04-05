@@ -1,4 +1,4 @@
-import { X } from 'lucide-react-native';
+import { XIcon } from 'lucide-nativewind';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
@@ -230,51 +230,51 @@ export const DiceScanner = ({
 
   if (!device && !permissionError)
     return (
-      <View className="absolute inset-0 bg-black z-50">
-        <Text className="flex-1 justify-center items-center text-white text-lg">
+      <View className="absolute inset-0 z-50 bg-black">
+        <Text className="flex-1 items-center justify-center text-lg text-white">
           Loading camera...
         </Text>
         <Pressable
           onPress={onClose}
-          className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+          className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
         >
-          <X size={32} color={'white'} />
+          <XIcon size={32} color="white" />
         </Pressable>
       </View>
     );
   if (permissionError)
     return (
-      <View className="absolute inset-0 bg-black z-50">
-        <View className="flex-1 bg-black relative">
-          <Text className="text-destructive text-center text-lg my-5">
+      <View className="absolute inset-0 z-50 bg-black">
+        <View className="relative flex-1 bg-black">
+          <Text className="my-5 text-center text-lg text-destructive">
             Camera permission denied.
           </Text>
-          <View className="items-center mt-5">
+          <View className="mt-5 items-center">
             <Pressable
               onPress={handleSimulatedScan}
-              className="w-16 h-16 rounded-full border-4 border-white justify-center items-center bg-white/10"
+              className="size-16 items-center justify-center rounded-full border-4 border-white bg-white/10"
             >
-              <View className="w-12 h-12 rounded-full bg-white/20" />
+              <View className="size-12 rounded-full bg-white/20" />
             </Pressable>
           </View>
-          <Text className="text-white text-center text-sm mt-2.5">
+          <Text className="mt-2.5 text-center text-sm text-white">
             Please enable camera access in settings to scan real dice.
           </Text>
-          <Text className="text-white text-center text-sm mt-2.5">
+          <Text className="mt-2.5 text-center text-sm text-white">
             Tap the button above to simulate a roll instead.
           </Text>
         </View>
         <Pressable
           onPress={onClose}
-          className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+          className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
         >
-          <X size={32} color={'white'} />
+          <XIcon size={32} color={'white'} />
         </Pressable>
       </View>
     );
 
   return (
-    <View style={StyleSheet.absoluteFill} className="bg-black z-50">
+    <View style={StyleSheet.absoluteFill} className="z-50 bg-black">
       <Camera
         style={StyleSheet.absoluteFill}
         device={device!}
@@ -290,30 +290,30 @@ export const DiceScanner = ({
 
       <Pressable
         onPress={onClose}
-        className="absolute top-5 right-5 z-10 p-2 bg-white/20 rounded-full"
+        className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
       >
-        <X size={32} color={'white'} />
+        <XIcon size={32} color={'white'} />
       </Pressable>
 
-      <View className="absolute bottom-10 left-0 right-0 items-center justify-center z-10">
+      <View className="absolute inset-x-0 bottom-10 z-10 items-center justify-center">
         <Pressable
           onPress={handleSimulatedScan}
           disabled={!isCameraReady}
-          className={`w-16 h-16 rounded-full border-4 justify-center items-center ${
+          className={`size-16 items-center justify-center rounded-full border-4 ${
             isCameraReady
               ? 'border-success bg-success/10'
               : 'border-white/40 bg-white/5'
           }`}
         >
           <View
-            className={`w-12 h-12 rounded-full ${
+            className={`size-12 rounded-full ${
               isCameraReady ? 'bg-white' : 'bg-white/20'
             }`}
           />
         </Pressable>
         <Text
-          className={`text-xs font-mono mt-2.5 text-white opacity-70 ${
-            isCameraReady && 'text-success opacity-100 font-bold'
+          className={`mt-2.5 font-mono text-xs text-white opacity-70 ${
+            isCameraReady && 'font-bold text-success opacity-100'
           }`}
         >
           {isCameraReady ? 'TAP TO CAPTURE' : 'Waiting for dice...'}

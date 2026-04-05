@@ -1,4 +1,5 @@
-import { Check } from 'lucide-react-native';
+import classNames from 'classnames';
+import { CheckIcon } from 'lucide-nativewind';
 import React from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -6,10 +7,17 @@ interface DieProps {
   value: number;
   locked: boolean;
   onClick: () => void;
+  disabled: boolean;
   size?: 'large' | 'small';
 }
 
-export const Die = ({ value, locked, onClick, size = 'large' }: DieProps) => {
+export const Die = ({
+  value,
+  locked,
+  onClick,
+  size = 'large',
+  disabled,
+}: DieProps) => {
   const shouldShowDot = (index: number, val: number): boolean => {
     const patterns: Record<number, number[]> = {
       1: [4],
@@ -28,27 +36,34 @@ export const Die = ({ value, locked, onClick, size = 'large' }: DieProps) => {
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Die with value ${value}${locked ? ', locked' : ''}`}
       onPress={onClick}
-      className={`bg-white rounded-lg border-2 border flex-wrap justify-center relative ${dieSize} ${padding} ${
-        locked ? 'border-destructive opacity-90' : 'active:bg-gray-100'
-      }`}
+      disabled={disabled}
+      className={classNames(
+        `relative flex-wrap justify-center rounded-lg border bg-white ${dieSize} ${padding}`,
+        {
+          'border-destructive opacity-90': locked && !disabled,
+          'active:bg-gray-100': !locked && !disabled,
+          'border-disabled': disabled,
+        },
+      )}
     >
-      <View className="w-full h-full flex-row flex-wrap">
+      <View className="size-full flex-row flex-wrap">
         {[...Array(9)].map((_, i) => (
-          <View
-            key={i}
-            className="w-1/3 h-1/3 flex justify-center items-center"
-          >
+          <View key={i} className="flex size-1/3 items-center justify-center">
             {shouldShowDot(i, value) && (
-              <View className={`bg-black rounded-full ${dotSize}`} />
+              <View
+                className={`${disabled ? 'bg-disabled' : 'bg-black'} rounded-full ${dotSize}`}
+              />
             )}
           </View>
         ))}
       </View>
 
       {locked && (
-        <View className="absolute -top-1 -right-1 bg-destructive rounded-full p-0.5 shadow-md">
-          <Check size={12} strokeWidth={3} color="white" />
+        <View className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 shadow-md">
+          <CheckIcon size={12} strokeWidth={3} color="white" />
         </View>
       )}
     </Pressable>

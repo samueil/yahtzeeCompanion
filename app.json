@@ -1,12 +1,19 @@
 {
-  "name": "yahtzeeCompanion",
-  "slug": "yahtzeeCompanion",
   "expo": {
     "name": "yahtzeeCompanion",
     "slug": "yahtzeeCompanion",
     "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.anonymous.yahtzeeCompanion"
-    }
+    },
+    "plugins": [
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
+        }
+      ]
+    ]
   }
 }
