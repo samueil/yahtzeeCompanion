@@ -3,20 +3,18 @@ import { DiceDetection } from '../domain/dice-detection';
 export interface ProcessDiceFrameOptions {
   outputTensor: Float32Array;
   outputShape: number[];
-  screenWidth: number;
-  screenHeight: number;
-  expectedWidth: number;
-  expectedHeight: number;
+  cropY: number;
+  cropSize: number;
+  offsetX?: number;
   confidenceThreshold: number;
 }
 
 export function processDiceFrame({
   outputTensor,
   outputShape,
-  screenWidth,
-  screenHeight,
-  expectedWidth,
-  expectedHeight,
+  cropY,
+  cropSize,
+  offsetX = 0,
   confidenceThreshold,
 }: ProcessDiceFrameOptions): DiceDetection[] {
   'worklet';
@@ -36,8 +34,6 @@ export function processDiceFrame({
     }
   }
 
-  const scaleX = screenWidth / expectedWidth;
-  const scaleY = screenHeight / expectedHeight;
   const detectionsArr: DiceDetection[] = [];
 
   for (let i = 0; i < numAnchors; i++) {
@@ -77,15 +73,13 @@ export function processDiceFrame({
         : outputTensor[i * numFeatures + 3];
 
       // Assuming normalized outputs (0.0 - 1.0)
-      // Since the model was trained on 640x640, it outputs coordinates relative to that square.
-      // But the camera feed is 16:9 (e.g. 1080x1920).
-      // The image was squished during `resize`.
-      // So cx/cy/w/h are percentages of the squished 640x640 frame.
-      // We multiply them by the full screen dimensions to map them back to the UI.
-      const realCx = cx * screenWidth;
-      const realCy = cy * screenHeight;
-      const realW = w * screenWidth;
-      const realH = h * screenHeight;
+      // Since we cropped the camera feed into a perfect 1:1 square before passing it
+      // to the model, `cx`, `cy`, `w`, and `h` are percentages of that cropped square!
+
+      const realW = w * cropSize;
+      const realH = h * cropSize;
+      const realCx = cx * cropSize + offsetX; // Apply horizontal offset if the Camera component overflows the screen width
+      const realCy = cy * cropSize + cropY; // Push the Y down because the crop was centered vertically
 
       detectionsArr.push({
         x: realCx - realW / 2,

@@ -12,8 +12,8 @@ import './global.css';
 import { DiceScanner, Die } from './src/components';
 import { CATEGORIES } from './src/constants/categories';
 import { Category } from './src/domain/category';
+import { calculatePotentialScore } from './src/lib/scoring';
 import { colors } from './src/theme/colors';
-import { calculatePotentialScore } from './src/utils/scoring';
 
 const App = () => {
   const [dice, setDice] = useState<number[]>([1, 1, 1, 1, 1]);
