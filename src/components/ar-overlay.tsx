@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { DiceDetection } from '../domain/dice-tetection';
+import type { DiceDetection } from '../domain/dice-detection';
 
 interface AROverlayProps {
   detections: DiceDetection[];
@@ -17,7 +17,7 @@ export const AROverlay = ({
     // Simple logic to determine if the overlay is "ready" based on detections
     // We consider it ready if we have detected at least the target number of dice
     // with a reasonable confidence.
-    const suitableDetections = detections.filter((d) => d.confidence > 0.7); // Example confidence threshold
+    const suitableDetections = detections.filter((d) => d.confidence > 0.15); // Example confidence threshold
     if (suitableDetections.length >= targetCount) {
       onReady(true);
     } else {

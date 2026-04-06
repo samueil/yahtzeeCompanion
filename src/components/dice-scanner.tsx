@@ -11,8 +11,9 @@ import {
 } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
-import type { DiceDetection } from '../domain/dice-tetection';
+import type { DiceDetection } from '../domain/dice-detection';
 import { AROverlay } from './ar-overlay';
+import { processDiceFrame } from './dice-processor';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -88,25 +89,23 @@ export const DiceScanner = ({
           // Usually YOLO shape is [1, width, height, 3] or [1, height, width, 3] (e.g. 640x640)
           const expectedHeight = inputTensor.shape[1] || 640;
           const expectedWidth = inputTensor.shape[2] || 640;
+
           const requiredDataType =
             inputTensor.dataType === 'uint8' ? 'uint8' : 'float32';
 
-          const scaleX = screenWidth / expectedWidth;
-          const scaleY = screenHeight / expectedHeight;
-
           console.log(
-            `[FrameProcessor] Resizing to ${expectedWidth}x${expectedHeight} ${requiredDataType}`,
+            `[FrameProcessor] Resizing to ${expectedWidth}x${expectedHeight} (${requiredDataType})`,
           );
+
+          // Use exactly what worked before (23% confidence)
           const resized = resize(frame, {
             scale: { width: expectedWidth, height: expectedHeight },
             pixelFormat: 'rgb',
             dataType: requiredDataType,
           });
-
           console.log(
             `[FrameProcessor] Resized! Array length: ${resized.length}. Running model...`,
-          );
-          // Run model synchronously on this background thread
+          ); // Run model synchronously on this background thread
           const outputs = tfliteModel.runSync([resized]);
 
           console.log(
@@ -124,88 +123,59 @@ export const DiceScanner = ({
           // where 10 = 4 (x, y, w, h) + 6 class probabilities.
           // 8400 is the number of anchor boxes predicted.
           const outputTensor = outputs[0] as Float32Array;
-          const outputShape = tfliteModel.outputs[0].shape; // e.g. [1, 10, 8400] or [1, 8400, 10]
+          const outputShape = tfliteModel.outputs[0].shape;
 
-          let numFeatures = 10;
-          let numAnchors = 8400;
-          let isTransposed = false;
+          const finalDetections = processDiceFrame({
+            outputTensor,
+            outputShape,
+            screenWidth,
+            screenHeight,
+            expectedWidth,
+            expectedHeight,
+            confidenceThreshold: 0.15,
+          });
 
-          // Dynamically detect YOLO format shape
-          if (outputShape.length >= 3) {
-            if (outputShape[1] === 10) {
-              numFeatures = outputShape[1];
-              numAnchors = outputShape[2];
-              isTransposed = true; // [1, 10, 8400]
-            } else {
-              numAnchors = outputShape[1];
-              numFeatures = outputShape[2];
-              isTransposed = false; // [1, 8400, 10]
+          if (finalDetections.length > 0) {
+            console.log(
+              `[FrameProcessor] Found ${finalDetections.length} dice!`,
+            );
+            if (finalDetections.length === 1) {
+              console.log({ singleDetection: finalDetections[0] });
             }
-          }
+          } else {
+            // Debug log on failure
+            const debugLimit = 2;
+            console.log(
+              `[FrameProcessor] NO DICE FOUND. RAW TENSOR SAMPLE (First ${debugLimit} anchors):`,
+            );
+            const numAnchors =
+              outputShape.length >= 3
+                ? outputShape[1] < outputShape[2]
+                  ? outputShape[2]
+                  : outputShape[1]
+                : 8400;
+            const numFeatures =
+              outputShape.length >= 3
+                ? outputShape[1] < outputShape[2]
+                  ? outputShape[1]
+                  : outputShape[2]
+                : 11;
+            const isTransposed =
+              outputShape.length >= 3 && outputShape[1] < outputShape[2];
 
-          const detectionsArr: DiceDetection[] = [];
-
-          for (let i = 0; i < numAnchors; i++) {
-            let maxProb = 0;
-            let classIdx = -1;
-
-            // Extract the 6 class probabilities
-            for (let c = 0; c < 6; c++) {
-              const prob = isTransposed
-                ? outputTensor[(4 + c) * numAnchors + i]
-                : outputTensor[i * numFeatures + (4 + c)];
-              if (prob > maxProb) {
-                maxProb = prob;
-                classIdx = c;
+            for (let i = 0; i < debugLimit; i++) {
+              const vals = [];
+              for (let f = 0; f < numFeatures; f++) {
+                const val = isTransposed
+                  ? outputTensor[f * numAnchors + i]
+                  : outputTensor[i * numFeatures + f];
+                vals.push(val.toFixed(4));
               }
-            }
-
-            // Lowered confidence threshold for testing
-            if (maxProb > 0.4) {
-              const cx = isTransposed
-                ? outputTensor[0 * numAnchors + i]
-                : outputTensor[i * numFeatures + 0];
-              const cy = isTransposed
-                ? outputTensor[1 * numAnchors + i]
-                : outputTensor[i * numFeatures + 1];
-              const w = isTransposed
-                ? outputTensor[2 * numAnchors + i]
-                : outputTensor[i * numFeatures + 2];
-              const h = isTransposed
-                ? outputTensor[3 * numAnchors + i]
-                : outputTensor[i * numFeatures + 3];
-
-              detectionsArr.push({
-                x: (cx - w / 2) * scaleX,
-                y: (cy - h / 2) * scaleY,
-                width: w * scaleX,
-                height: h * scaleY,
-                value: classIdx + 1,
-                confidence: maxProb,
-              });
+              console.log(`Anchor ${i}: [${vals.join(', ')}]`);
             }
           }
 
-          // Apply Non-Maximum Suppression (NMS) to remove duplicate boxes
-          // (Simplified NMS just sorting by confidence and taking top results)
-          detectionsArr.sort((a, b) => b.confidence - a.confidence);
-          const finalDetections: DiceDetection[] = [];
-
-          for (const det of detectionsArr) {
-            let isDuplicate = false;
-            for (const finalDet of finalDetections) {
-              // Simple Intersection over Union (IoU) approximation check
-              const dx = Math.abs(det.x - finalDet.x);
-              const dy = Math.abs(det.y - finalDet.y);
-              if (dx < 30 && dy < 30) {
-                isDuplicate = true;
-                break;
-              }
-            }
-            if (!isDuplicate) {
-              finalDetections.push(det);
-            }
-          }
+          setDetectionsJS(finalDetections);
 
           setDetectionsJS(finalDetections);
 
