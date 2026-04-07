@@ -27,8 +27,14 @@ Because this project relies on **custom C++ native code** (Vision Camera, Fast T
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (LTS recommended)
+- **Java 17** (Strictly required for Android builds)
 - Android Studio / Android SDK (for Android builds)
 - Xcode (for iOS builds, Mac only)
+
+> **⚠️ Important Note on Java Version for Android:** 
+> React Native's Android C++ build tools currently fail on Java 22+ with the error `WARNING: A restricted method in java.lang.System has been called`. 
+> 
+> Ensure your `JAVA_HOME` is pointing to Java 17 before running `npm run android`. If you use [SDKMAN!](https://sdkman.io/), you can set this up easily by running `sdk env init` in the project root to create a `.sdkmanrc` file, and then `sdk env` to switch automatically.
 
 ### Installation
 1. Clone the repository

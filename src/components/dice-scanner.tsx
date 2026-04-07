@@ -1,6 +1,6 @@
 import { XIcon } from 'lucide-nativewind';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import {
   Camera,
@@ -11,7 +11,8 @@ import {
 } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
-import type { DiceDetection } from '../domain/dice-tetection';
+import type { DiceDetection } from '../domain/dice-detection';
+import { processDiceFrame } from '../lib/dice-processor';
 import { AROverlay } from './ar-overlay';
 
 interface DiceScannerProps {
@@ -73,12 +74,18 @@ export const DiceScanner = ({
     }
   }, [tfliteModel]);
 
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const [containerLayout, setContainerLayout] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      if (!tfliteModel) return;
+      if (!tfliteModel || !containerLayout) return;
+
+      const screenWidth = containerLayout.width;
+      const screenHeight = containerLayout.height;
 
       runAtTargetFps(2, () => {
         'worklet';
@@ -91,119 +98,117 @@ export const DiceScanner = ({
           const requiredDataType =
             inputTensor.dataType === 'uint8' ? 'uint8' : 'float32';
 
-          const scaleX = screenWidth / expectedWidth;
-          const scaleY = screenHeight / expectedHeight;
+          // The native camera sensor on most Android phones is always landscape (e.g. 1920x1080)
+          // even if the app is locked to portrait! So `frame.width` is usually the larger number.
+          const frameWidth = frame.width;
+          const frameHeight = frame.height;
+          const isSensorLandscape = frameWidth > frameHeight;
 
-          console.log(
-            `[FrameProcessor] Resizing to ${expectedWidth}x${expectedHeight} ${requiredDataType}`,
-          );
+          const cropSize = isSensorLandscape ? frameHeight : frameWidth;
+          const cropX = isSensorLandscape ? (frameWidth - cropSize) / 2 : 0;
+          const cropY = isSensorLandscape ? 0 : (frameHeight - cropSize) / 2;
+
+          // The sensor is rotated relative to the portrait UI.
+          // Rotating 90deg aligns the raw frame perfectly upright for the ML model.
+          const rotation = '90deg';
           const resized = resize(frame, {
             scale: { width: expectedWidth, height: expectedHeight },
+            crop: { x: cropX, y: cropY, width: cropSize, height: cropSize },
             pixelFormat: 'rgb',
             dataType: requiredDataType,
+            rotation,
+          });
+          const outputs = tfliteModel.runSync([resized]);
+          const outputTensor = outputs[0] as Float32Array;
+          const outputShape = tfliteModel.outputs[0].shape;
+
+          // The Camera component defaults to `resizeMode="cover"`.
+          // On modern phones (e.g. 20:9 aspect ratio), the screen is taller than the 16:9 camera sensor.
+          // To cover the whole screen, the Camera component zooms in the video feed, cropping the left and right sides!
+          // We must calculate the exact pixel size of the video feed as it is rendered on the screen.
+
+          const portraitVideoWidth = isSensorLandscape
+            ? frameHeight
+            : frameWidth;
+          const portraitVideoHeight = isSensorLandscape
+            ? frameWidth
+            : frameHeight;
+
+          const screenAspectRatio = screenHeight / screenWidth;
+          const videoAspectRatio = portraitVideoHeight / portraitVideoWidth;
+
+          let renderedVideoWidth = screenWidth;
+          let renderedVideoHeight = screenHeight;
+
+          if (screenAspectRatio > videoAspectRatio) {
+            // Screen is taller than video (e.g. 20:9 screen vs 16:9 video).
+            // Video is scaled up to match screen height, so width overflows off-screen.
+            const scale = screenHeight / portraitVideoHeight;
+            renderedVideoWidth = portraitVideoWidth * scale;
+            renderedVideoHeight = screenHeight;
+          } else {
+            // Screen is wider than video (e.g. iPad).
+            // Video is scaled up to match screen width, so height overflows off-screen.
+            const scale = screenWidth / portraitVideoWidth;
+            renderedVideoWidth = screenWidth;
+            renderedVideoHeight = portraitVideoHeight * scale;
+          }
+
+          // The Y offset on the screen to the top of our centered square crop
+          //  The cropped 1:1 square's size on the screen is exactly equal to the rendered video's shortest side
+          // (which is `portraitVideoWidth * scale`, i.e., `renderedVideoWidth`).
+          const screenCropY = (renderedVideoHeight - renderedVideoWidth) / 2;
+
+          // Because the video width might overflow off the sides of the screen (resizeMode=cover),
+          // we must subtract half the overflow so the X coordinates map correctly to the visible screen!
+          const screenOverflowX = (renderedVideoWidth - screenWidth) / 2;
+
+          const finalDetections = processDiceFrame({
+            outputTensor,
+            outputShape,
+            cropY: screenCropY,
+            cropSize: renderedVideoWidth, // offsetY
+            offsetX: -screenOverflowX, // Shift boxes left by the overflow amount
+            confidenceThreshold: 0.15,
           });
 
-          console.log(
-            `[FrameProcessor] Resized! Array length: ${resized.length}. Running model...`,
-          );
-          // Run model synchronously on this background thread
-          const outputs = tfliteModel.runSync([resized]);
-
-          console.log(
-            `[FrameProcessor] Model ran! Output arrays: ${outputs.length}`,
-          );
-
-          if (outputs.length > 0) {
+          if (finalDetections.length > 0) {
             console.log(
-              `[FrameProcessor] Output 0 length: ${outputs[0].length}`,
+              `[FrameProcessor] Found ${finalDetections.length} dice!`,
             );
-          }
-
-          // TFLite YOLOv8 output parsing
-          // For a 640x640 model with 6 classes (dice 1-6), the output shape is usually [1, 10, 8400]
-          // where 10 = 4 (x, y, w, h) + 6 class probabilities.
-          // 8400 is the number of anchor boxes predicted.
-          const outputTensor = outputs[0] as Float32Array;
-          const outputShape = tfliteModel.outputs[0].shape; // e.g. [1, 10, 8400] or [1, 8400, 10]
-
-          let numFeatures = 10;
-          let numAnchors = 8400;
-          let isTransposed = false;
-
-          // Dynamically detect YOLO format shape
-          if (outputShape.length >= 3) {
-            if (outputShape[1] === 10) {
-              numFeatures = outputShape[1];
-              numAnchors = outputShape[2];
-              isTransposed = true; // [1, 10, 8400]
-            } else {
-              numAnchors = outputShape[1];
-              numFeatures = outputShape[2];
-              isTransposed = false; // [1, 8400, 10]
+            if (finalDetections.length === 1) {
+              console.log({ singleDetection: finalDetections[0] });
             }
-          }
+          } else {
+            // Debug log on failure
+            const debugLimit = 2;
+            console.log(
+              `[FrameProcessor] NO DICE FOUND. RAW TENSOR SAMPLE (First ${debugLimit} anchors):`,
+            );
+            const numAnchors =
+              outputShape.length >= 3
+                ? outputShape[1] < outputShape[2]
+                  ? outputShape[2]
+                  : outputShape[1]
+                : 8400;
+            const numFeatures =
+              outputShape.length >= 3
+                ? outputShape[1] < outputShape[2]
+                  ? outputShape[1]
+                  : outputShape[2]
+                : 11;
+            const isTransposed =
+              outputShape.length >= 3 && outputShape[1] < outputShape[2];
 
-          const detectionsArr: DiceDetection[] = [];
-
-          for (let i = 0; i < numAnchors; i++) {
-            let maxProb = 0;
-            let classIdx = -1;
-
-            // Extract the 6 class probabilities
-            for (let c = 0; c < 6; c++) {
-              const prob = isTransposed
-                ? outputTensor[(4 + c) * numAnchors + i]
-                : outputTensor[i * numFeatures + (4 + c)];
-              if (prob > maxProb) {
-                maxProb = prob;
-                classIdx = c;
+            for (let i = 0; i < debugLimit; i++) {
+              const vals = [];
+              for (let f = 0; f < numFeatures; f++) {
+                const val = isTransposed
+                  ? outputTensor[f * numAnchors + i]
+                  : outputTensor[i * numFeatures + f];
+                vals.push(val.toFixed(4));
               }
-            }
-
-            // Lowered confidence threshold for testing
-            if (maxProb > 0.4) {
-              const cx = isTransposed
-                ? outputTensor[0 * numAnchors + i]
-                : outputTensor[i * numFeatures + 0];
-              const cy = isTransposed
-                ? outputTensor[1 * numAnchors + i]
-                : outputTensor[i * numFeatures + 1];
-              const w = isTransposed
-                ? outputTensor[2 * numAnchors + i]
-                : outputTensor[i * numFeatures + 2];
-              const h = isTransposed
-                ? outputTensor[3 * numAnchors + i]
-                : outputTensor[i * numFeatures + 3];
-
-              detectionsArr.push({
-                x: (cx - w / 2) * scaleX,
-                y: (cy - h / 2) * scaleY,
-                width: w * scaleX,
-                height: h * scaleY,
-                value: classIdx + 1,
-                confidence: maxProb,
-              });
-            }
-          }
-
-          // Apply Non-Maximum Suppression (NMS) to remove duplicate boxes
-          // (Simplified NMS just sorting by confidence and taking top results)
-          detectionsArr.sort((a, b) => b.confidence - a.confidence);
-          const finalDetections: DiceDetection[] = [];
-
-          for (const det of detectionsArr) {
-            let isDuplicate = false;
-            for (const finalDet of finalDetections) {
-              // Simple Intersection over Union (IoU) approximation check
-              const dx = Math.abs(det.x - finalDet.x);
-              const dy = Math.abs(det.y - finalDet.y);
-              if (dx < 30 && dy < 30) {
-                isDuplicate = true;
-                break;
-              }
-            }
-            if (!isDuplicate) {
-              finalDetections.push(det);
+              console.log(`Anchor ${i}: [${vals.join(', ')}]`);
             }
           }
 
@@ -274,7 +279,16 @@ export const DiceScanner = ({
     );
 
   return (
-    <View style={StyleSheet.absoluteFill} className="z-50 bg-black">
+    <View
+      style={StyleSheet.absoluteFill}
+      className="z-50 bg-black"
+      onLayout={(e) => {
+        setContainerLayout({
+          width: e.nativeEvent.layout.width,
+          height: e.nativeEvent.layout.height,
+        });
+      }}
+    >
       <Camera
         style={StyleSheet.absoluteFill}
         device={device!}

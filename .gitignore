@@ -35,5 +35,5 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-app-example
-\n# Architecture\narchitecture.md
+# jetbrains
+.idea/
