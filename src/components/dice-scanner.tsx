@@ -1,6 +1,6 @@
 import { XIcon } from 'lucide-nativewind';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import {
   Camera,
@@ -154,12 +154,10 @@ export const DiceScanner = ({
             renderedVideoHeight = portraitVideoHeight * scale;
           }
 
-          // The cropped 1:1 square's size on the screen is exactly equal to the rendered video's shortest side
-          // (which is `portraitVideoWidth * scale`, i.e., `renderedVideoWidth`).
-          const renderedCropSize = renderedVideoWidth;
-
           // The Y offset on the screen to the top of our centered square crop
-          const screenCropY = (renderedVideoHeight - renderedCropSize) / 2;
+          //  The cropped 1:1 square's size on the screen is exactly equal to the rendered video's shortest side
+          // (which is `portraitVideoWidth * scale`, i.e., `renderedVideoWidth`).
+          const screenCropY = (renderedVideoHeight - renderedVideoWidth) / 2;
 
           // Because the video width might overflow off the sides of the screen (resizeMode=cover),
           // we must subtract half the overflow so the X coordinates map correctly to the visible screen!
@@ -169,7 +167,7 @@ export const DiceScanner = ({
             outputTensor,
             outputShape,
             cropY: screenCropY,
-            cropSize: renderedCropSize,
+            cropSize: renderedVideoWidth, // offsetY
             offsetX: -screenOverflowX, // Shift boxes left by the overflow amount
             confidenceThreshold: 0.15,
           });
