@@ -72,6 +72,6 @@ npm run web
 - `src/domain/` - Typescript interfaces for the ML pipeline (`DiceDetection`).
 
 ## ⚠️ Known Issues / TODO
-- **Roll Dice Behaviour without Scanner:** Introduce perstistence for setting whether the Button rolls random dice, or opens the camera.
+- **Roll Dice Behaviour without Scanner:** Introduce persistence for setting whether the Button rolls random dice, or opens the camera.
 - **Multiplayer:** Setup Option to add at least one Player
-- **YOLOv8 Output Parser Tuning:** The C++ worklet currently extracts bounding boxes using a hardcoded tensor parser designed for an exported YOLOv8 shape. Depending on the exact `.tflite` model used, the `numFeatures` vs `numAnchors` transposed shape may need calibration to ensure bounding boxes render at the correct sizes.
+- **YOLOv8 Output Parser Tuning:** The C++ worklet extracts bounding boxes depending on the exact `.tflite` model used. Currently it is still a bit erronous and can be improved on Roboflow.
