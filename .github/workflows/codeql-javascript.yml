@@ -1,0 +1,46 @@
+name: 'CodeQL JS/TS'
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'src/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - 'package*.json'
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'src/**'
+      - '*.ts'
+      - '*.tsx'
+      - '*.js'
+      - 'package*.json'
+  schedule:
+    - cron: '30 5 * * 1' # Runs at 05:30 UTC every Monday
+
+jobs:
+  analyze-js:
+    name: Analyze JavaScript/TypeScript
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
