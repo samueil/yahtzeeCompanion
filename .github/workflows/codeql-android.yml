@@ -32,7 +32,7 @@ jobs:
       # We still need Node & npm ci because React Native's Android
       # Gradle scripts read from node_modules!
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
