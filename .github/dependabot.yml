@@ -23,7 +23,7 @@ updates:
     schedule:
       interval: 'weekly'
     ignore:
-      - dependency-name: 'gradle'
+      - dependency-name: 'gradle-wrapper'
 
   # Maintain GitHub Actions versions
   - package-ecosystem: 'github-actions'
