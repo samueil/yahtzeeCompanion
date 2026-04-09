@@ -6,25 +6,27 @@
 version: 2
 updates:
   # Maintain dependencies for the React Native app (npm/yarn)
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     # Grouping related updates to reduce PR noise
     groups:
       react-dependencies:
         patterns:
-          - "react*"
-          - "@types/react*"
+          - 'react*'
+          - '@types/react*'
 
   # Maintain dependencies for the Android project (Gradle)
-  - package-ecosystem: "gradle"
-    directory: "/android"
+  - package-ecosystem: 'gradle'
+    directory: '/android'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
+    ignore:
+      - dependency-name: 'gradle'
 
   # Maintain GitHub Actions versions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
