@@ -43,8 +43,8 @@
     "jest-expo": "^55.0.13",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "react-test-renderer": "^19.2.0",
-    "typescript": "~5.9.2"
+    "react-test-renderer": "19.2.0",
+    "typescript": "~6.0.2"
   },
   "name": "yahtzeecompanion",
   "version": "1.0.0",

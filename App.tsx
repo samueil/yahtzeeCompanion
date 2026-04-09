@@ -133,7 +133,7 @@ const App = () => {
 
           <ScrollView
             className="flex-1 px-3 pt-4"
-            contentContainerStyle={{ paddingBottom: 200 }}
+            contentContainerClassName="pb-[200px]"
             showsVerticalScrollIndicator={false}
           >
             <View className="mb-4 overflow-hidden rounded-lg border-border bg-card">
