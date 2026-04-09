@@ -10,6 +10,17 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    ignore:
+      # Ignore core React/Expo dependencies.
+      # These should only be updated via `npx expo upgrade` to ensure SDK compatibility.
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
+      - dependency-name: 'react-native'
+      - dependency-name: 'expo*'
+      # Ignore all major version updates for npm packages
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
     # Grouping related updates to reduce PR noise
     groups:
       react-dependencies:
