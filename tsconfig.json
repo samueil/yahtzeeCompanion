@@ -11,5 +11,7 @@
     "metro.config.js",
     ".eslintrc.js",
     ".prettierrc.js",
+    "dist",
+    ".expo",
   ],
 }
