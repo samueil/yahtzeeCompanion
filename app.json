@@ -5,7 +5,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
-      "package": "com.anonymous.yahtzeeCompanion"
+      "package": "com.anonymous.yahtzeeCompanion",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       [
@@ -14,6 +17,12 @@
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
         }
       ]
-    ]
+    ],
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera."
+      },
+      "bundleIdentifier": "com.anonymous.yahtzeeCompanion"
+    }
   }
 }
