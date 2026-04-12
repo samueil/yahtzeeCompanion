@@ -1,4 +1,7 @@
 name: 'CodeQL JS/TS'
+permissions:
+  contents: read
+  pull-requests: write
 
 on:
   push:
