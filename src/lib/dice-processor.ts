@@ -9,6 +9,65 @@ export interface ProcessDiceFrameOptions {
   confidenceThreshold: number;
 }
 
+export interface FrameLayoutConfig {
+  frameWidth: number;
+  frameHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+}
+
+export function calculateCoordinateMapping(config: FrameLayoutConfig) {
+  'worklet';
+  const { frameWidth, frameHeight, containerWidth, containerHeight } = config;
+
+  // 1. Determine sensor orientation
+  // The native camera sensor on most Android phones is always landscape (e.g. 1920x1080)
+  const isSensorLandscape = frameWidth > frameHeight;
+  const portraitVideoWidth = isSensorLandscape ? frameHeight : frameWidth;
+  const portraitVideoHeight = isSensorLandscape ? frameWidth : frameHeight;
+
+  // 2. Calculate "cover" scaling
+  // We scale to fill the screen, picking the maximum scale factor required
+  const scale = Math.max(
+    containerWidth / portraitVideoWidth,
+    containerHeight / portraitVideoHeight,
+  );
+
+  // 3. Scaled video dimensions
+  const scaledVideoWidth = portraitVideoWidth * scale;
+  const scaledVideoHeight = portraitVideoHeight * scale;
+
+  // 4. Video offsets relative to screen (centered in container due to resizeMode="cover")
+  // These will be negative if the video is larger than the screen
+  const videoOffsetX = (containerWidth - scaledVideoWidth) / 2;
+  const videoOffsetY = (containerHeight - scaledVideoHeight) / 2;
+
+  // 5. Sensor crop size (1:1 square from the center of the raw frame)
+  const sensorCropSize = Math.min(frameWidth, frameHeight);
+  const sensorCropX = (frameWidth - sensorCropSize) / 2;
+  const sensorCropY = (frameHeight - sensorCropSize) / 2;
+
+  // 6. Crop properties relative to the rotated portrait video
+  const portraitCropX = (portraitVideoWidth - sensorCropSize) / 2;
+  const portraitCropY = (portraitVideoHeight - sensorCropSize) / 2;
+
+  // 7. Final crop bounding box on the UI screen
+  // screenOffsetX/Y is the absolute coordinate on the phone screen
+  const screenCropSize = sensorCropSize * scale;
+  const screenOffsetX = videoOffsetX + portraitCropX * scale;
+  const screenCropY = videoOffsetY + portraitCropY * scale;
+
+  return {
+    isSensorLandscape,
+    sensorCropSize,
+    sensorCropX,
+    sensorCropY,
+    screenCropY,
+    screenCropSize,
+    screenOffsetX,
+  };
+}
+
 export function processDiceFrame({
   outputTensor,
   outputShape,
