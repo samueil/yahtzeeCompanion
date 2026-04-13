@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
-
-const CONFIDENCE_THRESHOLD = 0.15;
+import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 
 interface AROverlayProps {
   detections: DiceDetection[];

@@ -1,6 +1,5 @@
-import { XIcon } from 'lucide-nativewind';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import {
   Camera,
@@ -14,9 +13,12 @@ import type { DiceDetection } from '../domain/dice-detection';
 import { useCameraPermissions } from '../hooks/use-camera-permissions';
 import {
   calculateCoordinateMapping,
+  CONFIDENCE_THRESHOLD,
   processDiceFrame,
 } from '../lib/dice-processor';
 import { AROverlay } from './ar-overlay';
+import { CaptureButton } from './capture-button';
+import { CloseButton } from './close-button';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -103,20 +105,22 @@ export const DiceScanner = ({
             cropY: mapping.screenCropY,
             cropSize: mapping.screenCropSize,
             offsetX: mapping.screenOffsetX,
-            confidenceThreshold: 0.15,
+            confidenceThreshold: CONFIDENCE_THRESHOLD,
           });
 
           setDetectionsJS(finalDetections);
 
-          if (finalDetections.length === neededCount) {
-            setFinalValuesJS(finalDetections.map((d) => d.value));
+          if (finalDetections.length >= neededCount) {
+            setFinalValuesJS(
+              finalDetections.slice(0, neededCount).map((d) => d.value),
+            );
           }
         } catch (error: any) {
           console.error('Frame processor error:', error?.message || error);
         }
       });
     },
-    [tfliteModel, resize, containerLayout],
+    [tfliteModel, resize, containerLayout, neededCount],
   );
 
   if (!device && !permissionError)
@@ -125,31 +129,27 @@ export const DiceScanner = ({
         <Text className="flex-1 items-center justify-center text-lg text-white">
           Loading camera...
         </Text>
-        <Pressable
-          onPress={onClose}
-          className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
-        >
-          <XIcon size={32} color="white" />
-        </Pressable>
+        <CloseButton onPress={onClose} />
       </View>
     );
   if (permissionError)
     return (
       <View className="absolute inset-0 z-50 bg-black">
-        <View className="relative flex-1 bg-black">
+        <View className="relative flex-1 justify-center bg-black">
           <Text className="my-5 text-center text-lg text-destructive">
             Camera permission denied.
           </Text>
           <Text className="mt-2.5 text-center text-sm text-white">
             Please enable camera access in settings to scan real dice.
           </Text>
+          <Pressable
+            onPress={() => Linking.openSettings()}
+            className="mx-auto mt-6 rounded-lg bg-primary px-6 py-3"
+          >
+            <Text className="font-bold text-white">Open Settings</Text>
+          </Pressable>
         </View>
-        <Pressable
-          onPress={onClose}
-          className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
-        >
-          <XIcon size={32} color={'white'} />
-        </Pressable>
+        <CloseButton onPress={onClose} />
       </View>
     );
 
@@ -177,37 +177,13 @@ export const DiceScanner = ({
         onReady={setIsCameraReady}
       />
 
-      <Pressable
-        onPress={onClose}
-        className="absolute right-5 top-5 z-10 rounded-full bg-white/20 p-2"
-      >
-        <XIcon size={32} color={'white'} />
-      </Pressable>
+      <CloseButton onPress={onClose} />
 
-      <View className="absolute inset-x-0 bottom-10 z-10 items-center justify-center">
-        <Pressable
-          onPress={() => onScanCompleteJS(finalValues)}
-          disabled={finalValues.length < neededCount}
-          className={`size-16 items-center justify-center rounded-full border-4 ${
-            isCameraReady
-              ? 'border-success bg-success/10'
-              : 'border-white/40 bg-white/5'
-          }`}
-        >
-          <View
-            className={`size-12 rounded-full ${
-              isCameraReady ? 'bg-white' : 'bg-white/20'
-            }`}
-          />
-        </Pressable>
-        <Text
-          className={`mt-2.5 font-mono text-xs text-white opacity-70 ${
-            isCameraReady && 'font-bold text-success opacity-100'
-          }`}
-        >
-          {isCameraReady ? 'TAP TO CAPTURE' : 'Waiting for dice...'}
-        </Text>
-      </View>
+      <CaptureButton
+        onPress={() => onScanCompleteJS(finalValues)}
+        disabled={finalValues.length < neededCount}
+        isReady={isCameraReady}
+      />
     </View>
   );
 };

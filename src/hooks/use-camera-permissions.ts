@@ -11,6 +11,8 @@ export function useCameraPermissions() {
         const isGranted = await requestPermission();
         if (!isGranted) {
           setPermissionError(true);
+        } else {
+          setPermissionError(false);
         }
       }
     };

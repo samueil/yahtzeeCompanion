@@ -54,7 +54,10 @@ export const Die = ({
           <View key={i} className="flex size-1/3 items-center justify-center">
             {shouldShowDot(i, value) && (
               <View
-                className={`${disabled ? 'bg-disabled' : 'bg-black'} rounded-full ${dotSize}`}
+                className={classNames('rounded-full', dotSize, {
+                  'bg-disabled': disabled,
+                  'bg-black': !disabled,
+                })}
               />
             )}
           </View>

@@ -62,7 +62,6 @@ describe('calculateCoordinateMapping', () => {
     const result = calculateCoordinateMapping(config);
 
     expect(result).toEqual({
-      isSensorLandscape: true,
       sensorCropSize: 480,
       sensorCropX: 80,
       sensorCropY: 0,
