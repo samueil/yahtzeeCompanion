@@ -65,7 +65,7 @@ interface DiceScannerProps {
 }
 ```
 
-Internal state: `detections: DiceDetection[]` (live worklet output) and `isCameraReady: boolean`.
+ Internal state includes `detections: DiceDetection[]` (live worklet output), `isDiceDetected: boolean` (whether dice are currently detected), `finalValues: number[]` (confirmed scan results), and `containerLayout` (layout data used for overlay positioning).
 
 The frame processor worklet runs at ~2 FPS — this is intentional to avoid UI thread contention. Do not remove the frame rate cap.
 

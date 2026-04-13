@@ -264,14 +264,20 @@ expect(redBox.props.style).toEqual(
 ### DO — verify callbacks receive correct arguments
 
 ```ts
-it('calls onReady(true) when enough high-confidence dice are detected', () => {
-  const mockOnReady = jest.fn();
+it('calls onDetectionSatisfied(true) when enough high-confidence dice are detected', () => {
+  const mockOnDetectionSatisfied = jest.fn();
   const detections: DiceDetection[] = [
     { value: 1, x: 10, y: 10, width: 50, height: 50, confidence: 0.8 },
     { value: 2, x: 70, y: 70, width: 50, height: 50, confidence: 0.9 },
   ];
-  render(<AROverlay detections={detections} targetCount={2} onReady={mockOnReady} />);
-  expect(mockOnReady).toHaveBeenCalledWith(true);
+  render(
+    <AROverlay
+      detections={detections}
+      targetCount={2}
+      onDetectionSatisfied={mockOnDetectionSatisfied}
+    />,
+  );
+  expect(mockOnDetectionSatisfied).toHaveBeenCalledWith(true);
 });
 ```
 

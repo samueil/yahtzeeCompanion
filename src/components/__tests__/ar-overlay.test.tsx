@@ -51,22 +51,20 @@ describe('AROverlay', () => {
     );
   });
 
-  it('calls onReady(true) when enough dice meet the threshold', () => {
-    const mockOnReady = jest.fn();
+  it('calls onDetectionSatisfied(true) when enough high-confidence dice are detected', () => {
+    const mockOnDetectionSatisfied = jest.fn();
     const detections: DiceDetection[] = [
       { value: 1, x: 10, y: 10, width: 50, height: 50, confidence: 0.8 },
       { value: 2, x: 70, y: 70, width: 50, height: 50, confidence: 0.9 },
     ];
-
-    // Need 2 dice
     render(
       <AROverlay
         detections={detections}
         targetCount={2}
-        onDetectionSatisfied={mockOnReady}
+        onDetectionSatisfied={mockOnDetectionSatisfied}
       />,
     );
-    expect(mockOnReady).toHaveBeenCalledWith(true);
+    expect(mockOnDetectionSatisfied).toHaveBeenCalledWith(true);
   });
 
   it('calls onReady(false) when not enough dice meet the threshold', () => {

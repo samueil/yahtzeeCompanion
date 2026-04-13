@@ -104,9 +104,7 @@ Any `return` statement that has at least one preceding statement in its block mu
 | Prop that receives a handler | Must start with `on` | `onClick`, `onScanComplete` |
 | Wrapper pass-through | `on` value allowed | `onClick={onClick}` |
 
-ESLint enforces this via `react/jsx-handler-names` with `checkLocalVariables: true`. The rule is disabled inside `__tests__/` files — jest mock names like `mockOnClick` are fine in tests.
-
-**Known violations to fix:** `onPress={resetGame}` in `App.tsx` and `onReady={setIsCameraReady}` in `dice-scanner.tsx`.
+ ESLint enforces this via `react/jsx-handler-names` with `checkLocalVariables: false`, so it checks JSX handler props but does not enforce local variable names. The rule is disabled inside `__tests__/` files — jest mock names like `mockOnClick` are fine in tests.
 
 ### Testing
 
