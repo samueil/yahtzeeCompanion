@@ -19,7 +19,7 @@ describe('AROverlay', () => {
       <AROverlay
         detections={detections}
         targetCount={3}
-        onReady={mockOnReady}
+        onDetectionSatisfied={mockOnReady}
       />,
     );
 
@@ -63,7 +63,7 @@ describe('AROverlay', () => {
       <AROverlay
         detections={detections}
         targetCount={2}
-        onReady={mockOnReady}
+        onDetectionSatisfied={mockOnReady}
       />,
     );
     expect(mockOnReady).toHaveBeenCalledWith(true);
@@ -81,7 +81,7 @@ describe('AROverlay', () => {
       <AROverlay
         detections={detections}
         targetCount={2}
-        onReady={mockOnReady}
+        onDetectionSatisfied={mockOnReady}
       />,
     );
     expect(mockOnReady).toHaveBeenCalledWith(false);

@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
 import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 
 interface AROverlayProps {
   detections: DiceDetection[];
   targetCount: number;
-  onReady: (isReady: boolean) => void;
+  onDetectionSatisfied: (isSatisfied: boolean) => void;
 }
 
 const getConfidenceColor = (confidence: number) => {
@@ -31,7 +31,7 @@ const getConfidenceColor = (confidence: number) => {
 export const AROverlay = ({
   detections,
   targetCount,
-  onReady,
+  onDetectionSatisfied: onDetectionSatisfied,
 }: AROverlayProps) => {
   useEffect(() => {
     // Simple logic to determine if the overlay is "ready" based on detections
@@ -41,14 +41,14 @@ export const AROverlay = ({
       (d) => d.confidence > CONFIDENCE_THRESHOLD,
     );
     if (suitableDetections.length >= targetCount) {
-      onReady(true);
+      onDetectionSatisfied(true);
     } else {
-      onReady(false);
+      onDetectionSatisfied(false);
     }
-  }, [detections, targetCount, onReady]);
+  }, [detections, targetCount, onDetectionSatisfied]);
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View className="absolute inset-0">
       {detections.map((det, index) => {
         const colors = getConfidenceColor(det.confidence);
         return (

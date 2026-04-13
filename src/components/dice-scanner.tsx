@@ -34,7 +34,7 @@ export const DiceScanner = ({
   const device = useCameraDevice('back');
   const { permissionError } = useCameraPermissions();
 
-  const [isCameraReady, setIsCameraReady] = useState<boolean>(false);
+  const [isDiceDetected, setIsDiceDetected] = useState<boolean>(false);
 
   // Note: We avoid useSharedValue/runOnJS to fix Reanimated 3+ bridge issues.
   // Instead we directly rely on the built-in Worklet capabilities of VisionCamera.
@@ -155,8 +155,7 @@ export const DiceScanner = ({
 
   return (
     <View
-      style={StyleSheet.absoluteFill}
-      className="z-50 bg-black"
+      className="absolute inset-0 z-50 bg-black"
       onLayout={(e) => {
         setContainerLayout({
           width: e.nativeEvent.layout.width,
@@ -174,7 +173,7 @@ export const DiceScanner = ({
       <AROverlay
         detections={detections}
         targetCount={neededCount}
-        onReady={setIsCameraReady}
+        onDetectionSatisfied={setIsDiceDetected}
       />
 
       <CloseButton onPress={onClose} />
@@ -182,7 +181,7 @@ export const DiceScanner = ({
       <CaptureButton
         onPress={() => onScanCompleteJS(finalValues)}
         disabled={finalValues.length < neededCount}
-        isReady={isCameraReady}
+        isReady={isDiceDetected && finalValues.length >= neededCount}
       />
     </View>
   );
