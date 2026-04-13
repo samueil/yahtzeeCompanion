@@ -1,5 +1,7 @@
 import { DiceDetection } from '../domain/dice-detection';
 
+export const CONFIDENCE_THRESHOLD = 0.15;
+
 export interface ProcessDiceFrameOptions {
   outputTensor: Float32Array;
   outputShape: number[];
@@ -7,6 +9,61 @@ export interface ProcessDiceFrameOptions {
   cropSize: number;
   offsetX?: number;
   confidenceThreshold: number;
+}
+
+export interface FrameLayoutConfig {
+  frameWidth: number;
+  frameHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+}
+
+export function calculateCoordinateMapping(config: FrameLayoutConfig) {
+  'worklet';
+  const { frameWidth, frameHeight, containerWidth, containerHeight } = config;
+
+  // Since the app is locked to portrait, the camera frame is displayed upright.
+  // The shorter dimension of the raw frame becomes the physical width of the video.
+  const videoWidth = Math.min(frameWidth, frameHeight);
+  const videoHeight = Math.max(frameWidth, frameHeight);
+
+  // 1. Calculate "cover" scaling
+  const scale = Math.max(
+    containerWidth / videoWidth,
+    containerHeight / videoHeight,
+  );
+
+  // 2. Scaled video dimensions
+  const scaledVideoWidth = videoWidth * scale;
+  const scaledVideoHeight = videoHeight * scale;
+
+  // 3. Video offsets relative to screen
+  const videoOffsetX = (containerWidth - scaledVideoWidth) / 2;
+  const videoOffsetY = (containerHeight - scaledVideoHeight) / 2;
+
+  // 4. Sensor crop size (1:1 square from the center of the raw frame)
+  const sensorCropSize = videoWidth;
+  const sensorCropX = (frameWidth - sensorCropSize) / 2;
+  const sensorCropY = (frameHeight - sensorCropSize) / 2;
+
+  // 5. Final crop bounding box on the UI screen
+  // Since the crop is bounded by the smaller dimension (videoWidth),
+  // its local X offset within the upright video is always 0.
+  // Its local Y offset is the difference between video height and the crop size.
+  const videoCropY = (videoHeight - sensorCropSize) / 2;
+
+  const screenCropSize = sensorCropSize * scale;
+  const screenOffsetX = videoOffsetX;
+  const screenCropY = videoOffsetY + videoCropY * scale;
+
+  return {
+    sensorCropSize,
+    sensorCropX,
+    sensorCropY,
+    screenCropY,
+    screenCropSize,
+    screenOffsetX,
+  };
 }
 
 export function processDiceFrame({

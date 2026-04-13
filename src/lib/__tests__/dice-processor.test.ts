@@ -1,4 +1,7 @@
-import { processDiceFrame } from '../dice-processor';
+import {
+  calculateCoordinateMapping,
+  processDiceFrame,
+} from '../dice-processor';
 
 describe('dice-processor', () => {
   it('should parse an 11-feature YOLOv8 tensor with explicit objectness (transposed: [1, 11, 8400])', () => {
@@ -43,5 +46,44 @@ describe('dice-processor', () => {
     // cx: 0.5 * cropSize = 540
     // x = 540 - 54 = 486
     expect(results[0].x).toBeCloseTo(486, 0);
+  });
+});
+
+describe('calculateCoordinateMapping', () => {
+  it('correctly maps coordinates for a standard phone (taller than camera aspect ratio)', () => {
+    // These values are from the real-world device logs provided
+    const config = {
+      containerHeight: 705,
+      containerWidth: 360,
+      frameHeight: 480,
+      frameWidth: 640,
+    };
+
+    const result = calculateCoordinateMapping(config);
+
+    expect(result).toEqual({
+      sensorCropSize: 480,
+      sensorCropX: 80,
+      sensorCropY: 0,
+      screenCropSize: 528.75,
+      screenCropY: 88.125,
+      screenOffsetX: -84.375,
+    });
+  });
+
+  it('correctly maps coordinates for a square container (perfect 1:1 match)', () => {
+    const config = {
+      containerHeight: 500,
+      containerWidth: 500,
+      frameHeight: 480,
+      frameWidth: 640,
+    };
+
+    const result = calculateCoordinateMapping(config);
+
+    expect(result.sensorCropSize).toBe(480);
+    expect(result.screenCropSize).toBeCloseTo(500, 4);
+    expect(result.screenCropY).toBeCloseTo(0, 4);
+    expect(result.screenOffsetX).toBeCloseTo(0, 4);
   });
 });
