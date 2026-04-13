@@ -11,7 +11,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import './global.css';
 import { DiceScanner, Die } from './src/components';
 import { CATEGORIES } from './src/constants/categories';
-import { Category } from './src/domain/category';
+import type { Category } from './src/domain/category';
 import { calculatePotentialScore } from './src/lib/scoring';
 import { colors } from './src/theme/colors';
 
@@ -93,7 +93,7 @@ const App = () => {
     }
   }, [scores]);
 
-  const resetGame = () => {
+  const handleResetGame = () => {
     setScores({});
     setRollsLeft(3);
     setTurn(1);
@@ -145,6 +145,7 @@ const App = () => {
               {CATEGORIES.UPPER.map((cat) => {
                 const taken = scores[cat.id] !== undefined;
                 const potential = calculatePotentialScore(dice, cat);
+
                 return (
                   <Pressable
                     key={cat.id}
@@ -198,6 +199,7 @@ const App = () => {
               {CATEGORIES.LOWER.map((cat) => {
                 const taken = scores[cat.id] !== undefined;
                 const potential = calculatePotentialScore(dice, cat);
+
                 return (
                   <Pressable
                     key={cat.id}
@@ -265,7 +267,7 @@ const App = () => {
             <View className="flex-col items-center justify-center gap-4 bg-card p-4 pt-0">
               {gameState === 'finished' ? (
                 <Pressable
-                  onPress={resetGame}
+                  onPress={handleResetGame}
                   className="w-full flex-row items-center justify-center gap-2 rounded-lg bg-primary py-5 font-bold text-inverted shadow-indigo-200/50"
                 >
                   <RotateCcwIcon size={20} color={'white'} className="mr-2" />

@@ -27,6 +27,7 @@ export const Die = ({
       5: [0, 2, 4, 6, 8],
       6: [0, 2, 3, 5, 6, 8],
     };
+
     return patterns[val]?.includes(index);
   };
 
@@ -65,7 +66,7 @@ export const Die = ({
       </View>
 
       {locked && (
-        <View className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 shadow-md">
+        <View className="absolute -top-1 right-1 rounded-full bg-destructive p-0.5 shadow-md">
           <CheckIcon size={12} strokeWidth={3} color="white" />
         </View>
       )}
