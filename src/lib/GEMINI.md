@@ -60,4 +60,4 @@ Parses the raw YOLOv8 TFLite output tensor into a list of detected dice.
 
 **NMS:** detections are sorted by confidence descending, then any box whose centre is within 30px of an already-accepted box is dropped as a duplicate.
 
-**`confidenceThreshold`** is set by the caller (currently ~0.5 in `DiceScanner`). Tune it there, not here.
+**`confidenceThreshold`** is set by the caller (currently `0.15` in `DiceScanner`). Tune it there, not here.
