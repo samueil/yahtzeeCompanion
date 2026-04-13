@@ -31,7 +31,7 @@ const getConfidenceColor = (confidence: number) => {
 export const AROverlay = ({
   detections,
   targetCount,
-  onDetectionSatisfied: onDetectionSatisfied,
+  onDetectionSatisfied,
 }: AROverlayProps) => {
   useEffect(() => {
     // Simple logic to determine if the overlay is "ready" based on detections
