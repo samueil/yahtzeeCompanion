@@ -19,7 +19,7 @@ it('calls onClick when pressed', async () => {
   // Act
   await user.press(screen.getByRole('button', { name: 'Die with value 1' }));
 
-  // Arrange → Act → Assert blank lines are mandatory.
+  // Assert
   expect(mockOnClick).toHaveBeenCalledTimes(1);
 });
 ```
