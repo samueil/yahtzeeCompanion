@@ -1,1 +1,3 @@
 @AI_INSTRUCTIONS.md
+@src/components/AI_INSTRUCTIONS.md
+@src/lib/AI_INSTRUCTIONS.md
