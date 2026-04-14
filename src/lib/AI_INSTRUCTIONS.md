@@ -58,6 +58,6 @@ Parses the raw YOLOv8 TFLite output tensor into a list of detected dice.
 
 **Coordinate denormalisation:** normalised coords are multiplied by `cropSize` (the on-screen pixel size of the square crop) and offset by `cropY` / `offsetX` to get absolute screen positions.
 
-**NMS:** detections are sorted by confidence descending, then any box whose centre is within 30px of an already-accepted box is dropped as a duplicate.
+**NMS:** detections are sorted by confidence descending, then any box whose top-left corner (`x`/`y`) is within 30px (in both axes) of an already-accepted box's top-left corner is dropped as a duplicate. Note: comparing top-left corners is a known approximation — comparing centres would be more geometrically correct for NMS (two boxes of different sizes with the same centre would compare differently) but the current approach works well enough in practice.
 
 **`confidenceThreshold`** is set by the caller (currently `0.15` in `DiceScanner`). Tune it there, not here.

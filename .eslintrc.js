@@ -20,16 +20,12 @@ module.exports = {
     'testing-library/no-node-access': 'off',
     'object-shorthand': ['error', 'always'],
     'prefer-const': 'error',
-    '@typescript-eslint/consistent-type-imports': [
-      'error',
-      { prefer: 'type-imports', disallowTypeAnnotations: false },
-    ],
     'padding-line-between-statements': [
-      'warn',
+      'error',
       { blankLine: 'always', prev: '*', next: 'return' },
     ],
     'react/jsx-handler-names': [
-      'warn',
+      'error',
       {
         eventHandlerPrefix: 'handle',
         eventHandlerPropPrefix: 'on',
@@ -37,12 +33,14 @@ module.exports = {
         checkInlineFunction: false,
       },
     ],
+    // @react-native-community/eslint-config enables this rule, but it was
+    // removed in @typescript-eslint v7. Disable it here so ESLint does not
+    // complain about an unknown rule.
+    '@typescript-eslint/func-call-spacing': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,
     sourceType: 'module',
-    // THIS FIXES THE TS 6.0.2 WARNING
-    warnOnUnsupportedTypeScriptVersion: false,
   },
   settings: {
     'import/resolver': {
@@ -52,6 +50,21 @@ module.exports = {
     },
   },
   overrides: [
+    {
+      // Re-declare the parser for TS files so ESLint resolves it from the
+      // project root (v8) rather than from inside
+      // @react-native-community/eslint-config/node_modules/ (v5).
+      // @typescript-eslint/consistent-type-imports is also scoped here because
+      // in v8 it calls getParserServices, which requires @typescript-eslint/parser.
+      files: ['*.ts', '*.tsx'],
+      parser: '@typescript-eslint/parser',
+      rules: {
+        '@typescript-eslint/consistent-type-imports': [
+          'error',
+          { prefer: 'type-imports', disallowTypeAnnotations: false },
+        ],
+      },
+    },
     {
       files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
       rules: {
