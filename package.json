@@ -9,6 +9,7 @@
     "build:check": "expo export"
   },
   "dependencies": {
+    "@react-native-firebase/app": "^24.0.0",
     "classnames": "^2.5.1",
     "expo": "^55.0.11",
     "lucide-nativewind": "^1.7.0",
