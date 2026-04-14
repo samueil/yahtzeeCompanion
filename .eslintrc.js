@@ -56,7 +56,7 @@ module.exports = {
       // @react-native-community/eslint-config/node_modules/ (v5).
       // @typescript-eslint/consistent-type-imports is also scoped here because
       // in v8 it calls getParserServices, which requires @typescript-eslint/parser.
-      files: ['*.ts', '*.tsx'],
+      files: ['**/*.ts', '**/*.tsx'],
       parser: '@typescript-eslint/parser',
       rules: {
         '@typescript-eslint/consistent-type-imports': [
