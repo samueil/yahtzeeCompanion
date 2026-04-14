@@ -74,6 +74,8 @@ jobs:
       inputs.platform == 'android' ||
       inputs.platform == 'all'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -140,6 +142,8 @@ jobs:
       inputs.platform == 'ios' ||
       inputs.platform == 'all'
     runs-on: ubuntu-latest  # EAS Build runs in Expo's cloud; no macOS runner needed.
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository

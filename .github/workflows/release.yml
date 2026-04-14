@@ -1,7 +1,7 @@
 # Release Cycle Automation
 #
 # Manually triggered workflow that:
-#   1. Finalises (or bumps) the current version by stripping any pre-release
+#   1. Finalizes (or bumps) the current version by stripping any pre-release
 #      suffix (-dev, -SNAPSHOT, etc.) and optionally applying a semver bump.
 #   2. Updates package.json and app.json to the release version.
 #   3. Generates a CHANGELOG.md entry from commits since the previous tag.
@@ -144,7 +144,7 @@ jobs:
 
           [ -z "$COMMITS" ] && COMMITS="- No notable changes since last release."
 
-          ENTRY="## [${VERSION}] – ${DATE}"$'\n'"${COMMITS}"
+          ENTRY="## [${VERSION}] - ${DATE}"$'\n'"${COMMITS}"
 
           if [ -f CHANGELOG.md ]; then
             EXISTING=$(cat CHANGELOG.md)
