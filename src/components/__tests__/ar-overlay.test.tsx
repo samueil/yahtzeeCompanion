@@ -67,7 +67,7 @@ describe('AROverlay', () => {
     expect(mockOnDetectionSatisfied).toHaveBeenCalledWith(true);
   });
 
-  it('calls onReady(false) when not enough dice meet the threshold', () => {
+  it('calls onDetectionSatisfied(false) when not enough dice meet the threshold', () => {
     const mockOnDetectionSatisfied = jest.fn();
 
     const detections: DiceDetection[] = [
