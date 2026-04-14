@@ -79,11 +79,13 @@ describe('calculateCoordinateMapping', () => {
       frameWidth: 640,
     };
 
-    const result = calculateCoordinateMapping(config);
-
-    expect(result.sensorCropSize).toBe(480);
-    expect(result.screenCropSize).toBeCloseTo(500, 4);
-    expect(result.screenCropY).toBeCloseTo(0, 4);
-    expect(result.screenOffsetX).toBeCloseTo(0, 4);
+    expect(calculateCoordinateMapping(config)).toEqual({
+      sensorCropSize: 480,
+      sensorCropX: 80,
+      sensorCropY: 0,
+      screenCropSize: expect.closeTo(500, 4),
+      screenCropY: expect.closeTo(0, 4),
+      screenOffsetX: expect.closeTo(0, 4),
+    });
   });
 });

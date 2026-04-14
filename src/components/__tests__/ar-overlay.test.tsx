@@ -5,7 +5,7 @@ import { AROverlay } from '../ar-overlay';
 
 describe('AROverlay', () => {
   it('renders bounding boxes with dynamic colors based on confidence', () => {
-    const mockOnReady = jest.fn();
+    const mockOnDetectionSatisfied = jest.fn();
 
     // We feed specific confidence scores that map exactly to the mathematical
     // extremes of Red (0% normalized), Yellow (50% normalized), and Green (100% normalized).
@@ -19,7 +19,7 @@ describe('AROverlay', () => {
       <AROverlay
         detections={detections}
         targetCount={3}
-        onDetectionSatisfied={mockOnReady}
+        onDetectionSatisfied={mockOnDetectionSatisfied}
       />,
     );
 
@@ -51,26 +51,25 @@ describe('AROverlay', () => {
     );
   });
 
-  it('calls onReady(true) when enough dice meet the threshold', () => {
-    const mockOnReady = jest.fn();
+  it('calls onDetectionSatisfied(true) when enough high-confidence dice are detected', () => {
+    const mockOnDetectionSatisfied = jest.fn();
     const detections: DiceDetection[] = [
       { value: 1, x: 10, y: 10, width: 50, height: 50, confidence: 0.8 },
       { value: 2, x: 70, y: 70, width: 50, height: 50, confidence: 0.9 },
     ];
-
-    // Need 2 dice
     render(
       <AROverlay
         detections={detections}
         targetCount={2}
-        onDetectionSatisfied={mockOnReady}
+        onDetectionSatisfied={mockOnDetectionSatisfied}
       />,
     );
-    expect(mockOnReady).toHaveBeenCalledWith(true);
+    expect(mockOnDetectionSatisfied).toHaveBeenCalledWith(true);
   });
 
-  it('calls onReady(false) when not enough dice meet the threshold', () => {
-    const mockOnReady = jest.fn();
+  it('calls onDetectionSatisfied(false) when not enough dice meet the threshold', () => {
+    const mockOnDetectionSatisfied = jest.fn();
+
     const detections: DiceDetection[] = [
       { value: 1, x: 10, y: 10, width: 50, height: 50, confidence: 0.1 }, // Below 0.15 threshold
       { value: 2, x: 70, y: 70, width: 50, height: 50, confidence: 0.9 }, // Above threshold
@@ -81,9 +80,9 @@ describe('AROverlay', () => {
       <AROverlay
         detections={detections}
         targetCount={2}
-        onDetectionSatisfied={mockOnReady}
+        onDetectionSatisfied={mockOnDetectionSatisfied}
       />,
     );
-    expect(mockOnReady).toHaveBeenCalledWith(false);
+    expect(mockOnDetectionSatisfied).toHaveBeenCalledWith(false);
   });
 });

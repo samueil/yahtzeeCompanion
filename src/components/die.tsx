@@ -27,6 +27,7 @@ export const Die = ({
       5: [0, 2, 4, 6, 8],
       6: [0, 2, 3, 5, 6, 8],
     };
+
     return patterns[val]?.includes(index);
   };
 

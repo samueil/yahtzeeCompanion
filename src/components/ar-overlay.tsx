@@ -51,6 +51,7 @@ export const AROverlay = ({
     <View className="absolute inset-0">
       {detections.map((det, index) => {
         const colors = getConfidenceColor(det.confidence);
+
         return (
           <View
             key={index}

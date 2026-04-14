@@ -1,4 +1,4 @@
-import { DiceDetection } from '../domain/dice-detection';
+import type { DiceDetection } from '../domain/dice-detection';
 
 export const CONFIDENCE_THRESHOLD = 0.15;
 
@@ -116,16 +116,16 @@ export function processDiceFrame({
 
     if (maxProb > confidenceThreshold) {
       // Normalized coordinates
-      let cx = isTransposed
+      const cx = isTransposed
         ? outputTensor[0 * numAnchors + i]
         : outputTensor[i * numFeatures + 0];
-      let cy = isTransposed
+      const cy = isTransposed
         ? outputTensor[1 * numAnchors + i]
         : outputTensor[i * numFeatures + 1];
-      let w = isTransposed
+      const w = isTransposed
         ? outputTensor[2 * numAnchors + i]
         : outputTensor[i * numFeatures + 2];
-      let h = isTransposed
+      const h = isTransposed
         ? outputTensor[3 * numAnchors + i]
         : outputTensor[i * numFeatures + 3];
 

@@ -1,12 +1,10 @@
-import { Category } from '../domain/category';
+import type { Category } from '../domain/category';
 
-export const calculatePotentialScore = (
-  dice: number[],
-  category: Category,
-): number => {
+export const calculatePotentialScore = (dice: number[], category: Category) => {
   const counts = dice.reduce(
     (acc, die) => {
       acc[die] = (acc[die] || 0) + 1;
+
       return acc;
     },
     {} as Record<number, number>,
@@ -44,6 +42,7 @@ export const calculatePotentialScore = (
         sortedDice.join('').includes(sequence1.join('')) ||
         sortedDice.join('').includes(sequence2.join('')) ||
         sortedDice.join('').includes(sequence3.join(''));
+
       return isSmallStraight ? 30 : 0;
     }
     case 'largeStraight': {
@@ -53,6 +52,7 @@ export const calculatePotentialScore = (
       const isLargeStraight =
         sortedDiceLS.join('').includes(sequenceLS1.join('')) ||
         sortedDiceLS.join('').includes(sequenceLS2.join(''));
+
       return isLargeStraight ? 40 : 0;
     }
     case 'yahtzee':
