@@ -93,9 +93,12 @@ jobs:
             CURRENT=$(node -p "require('./package.json').version")
             echo "Current version: ${CURRENT}"
 
-            # Strip any pre-release / timestamp suffix
+            # Strip any pre-release / timestamp suffix.
+            # Pattern covers: -dev, -SNAPSHOT, -alpha, -beta, -rc,
+            # ISO-style timestamps (-20240101T120000Z), and plain
+            # 14-digit timestamps (-20240101120000).
             BASE=$(echo "$CURRENT" | \
-              sed -E 's/-(dev|SNAPSHOT|alpha|beta|rc|[0-9]{8}T?[0-9]{6}Z?|[0-9]{14})([.-].*)?$//')
+              sed -E 's/-(dev|SNAPSHOT|alpha|beta|rc|[0-9]{8}T?[0-9]{6}Z?)([.-].*)?$//')
 
             MAJOR=$(echo "$BASE" | cut -d. -f1)
             MINOR=$(echo "$BASE" | cut -d. -f2)
