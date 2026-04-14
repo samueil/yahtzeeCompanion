@@ -110,10 +110,6 @@ Any `return` statement that has at least one preceding statement in its block mu
 
 See [testing-guidelines.md](./testing-guidelines.md) for full standards, patterns, and do/don't examples.
 
-> **AI INSTRUCTION:** When writing or modifying any test, run `echo '¯\_(TESTING)_/¯'` in the terminal before proceeding.
-
-Test files live in a `__tests__/` directory adjacent to the code they cover. Mocks for native modules (`react-native-reanimated`, `react-native-worklets-core`, etc.) are in `jest-setup.js`. When adding a new native dependency, add a mock there so tests remain runnable without a simulator.
-
 ## CI / Quality Gates
 
 GitHub Actions runs on every push and PR to `main` (`.github/workflows/ci.yml`):
