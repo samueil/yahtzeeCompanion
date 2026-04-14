@@ -1,0 +1,199 @@
+name: Release
+
+# Manually triggered release workflow.
+# 1. Strips -SNAPSHOT / timestamp suffix from the current version to produce the release version.
+# 2. Updates package.json and app.json with the release version.
+# 3. Generates / prepends a CHANGELOG entry from commits since the last tag.
+# 4. Commits the changes and creates an annotated Git tag.
+# 5. Bumps to the next development version (e.g. 1.0.1-SNAPSHOT) and commits.
+# 6. Pushes all commits and the new tag to the branch this workflow was triggered from.
+#
+# Requirements:
+#   - The GITHUB_TOKEN must have 'contents: write' permission (set below).
+#   - If the target branch has branch-protection rules that block direct pushes, grant
+#     the "GitHub Actions" bot bypass permission, or use a PAT stored as a secret
+#     (replace `secrets.GITHUB_TOKEN` with `secrets.<YOUR_PAT_SECRET>`).
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version component to increment for the next development version'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_version:
+        description: >
+          Override the release version (e.g. 1.2.3).
+          Leave empty to derive it by stripping the -SNAPSHOT or timestamp suffix
+          from the current package.json version.
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine Release and Next Development Versions
+        id: version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          if [ -n "${{ inputs.release_version }}" ]; then
+            RELEASE_VERSION="${{ inputs.release_version }}"
+          else
+            # Strip common development suffixes:
+            #   -SNAPSHOT
+            #   -20240101120000  (14-digit timestamp)
+            #   -20240101T120000Z (ISO-style timestamp)
+            RELEASE_VERSION=$(echo "$CURRENT_VERSION" | \
+              sed -E 's/-(SNAPSHOT|[0-9]{8}T?[0-9]{6}Z?|[0-9]{14})$//')
+          fi
+
+          echo "Release version: $RELEASE_VERSION"
+          echo "release_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
+          # Calculate next development version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$RELEASE_VERSION"
+          case "${{ inputs.bump_type }}" in
+            major) NEXT_VERSION="$((MAJOR + 1)).0.0-SNAPSHOT" ;;
+            minor) NEXT_VERSION="${MAJOR}.$((MINOR + 1)).0-SNAPSHOT" ;;
+            *)     NEXT_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))-SNAPSHOT" ;;
+          esac
+
+          echo "Next development version: $NEXT_VERSION"
+          echo "next_version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update Versions to Release
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const v = process.env.RELEASE_VERSION;
+
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = v;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = v;
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+
+            console.log('Set version to', v);
+          "
+
+      - name: Generate Changelog
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          node -e "
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+
+            const releaseVersion = process.env.RELEASE_VERSION;
+            const date = new Date().toISOString().split('T')[0];
+
+            // Find the most recent tag (if any)
+            let lastTag = '';
+            try {
+              lastTag = execSync('git describe --tags --abbrev=0 2>/dev/null', { encoding: 'utf8' }).trim();
+            } catch (e) {
+              console.warn('No previous tag found; changelog will include all commits.', e.message);
+            }
+
+            // Collect commit subjects since the last tag (or all commits)
+            const range = lastTag ? lastTag + '..HEAD' : 'HEAD';
+            let commits = '';
+            try {
+              commits = execSync(
+                \`git log \${range} --pretty=format:'- %s (%h)' --no-merges\`,
+                { encoding: 'utf8' }
+              ).trim();
+            } catch (e) {
+              console.warn('Could not retrieve commit log:', e.message);
+            }
+
+            if (!commits) commits = '- No notable changes';
+
+            const entry = '## [' + releaseVersion + '] - ' + date + '\n\n' + commits + '\n';
+
+            let existing = '';
+            if (fs.existsSync('CHANGELOG.md')) {
+              existing = fs.readFileSync('CHANGELOG.md', 'utf8')
+                .replace(/^# Changelog\n+/, '');
+            }
+
+            const content = '# Changelog\n\n' + entry + '\n' + existing;
+            fs.writeFileSync('CHANGELOG.md', content);
+            console.log('Updated CHANGELOG.md');
+          "
+
+      - name: Commit Release Version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          git add package.json app.json CHANGELOG.md
+          git commit -m "chore: release v${RELEASE_VERSION}"
+
+      - name: Create Release Tag
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.release_version }}
+        run: |
+          git tag -a "v${RELEASE_VERSION}" -m "Release v${RELEASE_VERSION}"
+
+      - name: Update Versions to Next Development Version
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.next_version }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const v = process.env.NEXT_VERSION;
+
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = v;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.version = v;
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+
+            console.log('Set version to', v);
+          "
+
+      - name: Commit Next Development Version
+        env:
+          NEXT_VERSION: ${{ steps.version.outputs.next_version }}
+        run: |
+          git add package.json app.json
+          git commit -m "chore: prepare next development version ${NEXT_VERSION} [skip ci]"
+
+      - name: Push Commits and Tag
+        run: |
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin --tags
