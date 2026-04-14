@@ -1,0 +1,197 @@
+# Deployment Pipeline – Distributable Builds
+#
+# Produces installable builds for Android (APK) and iOS (IPA) so that any
+# tester can install the app without a local development environment.
+#
+# Triggers
+# --------
+#   • Automatically on every versioned release tag  (v*.*.*).
+#   • Manually via workflow_dispatch with a platform selector.
+#
+# Android build
+# -------------
+#   Runs on ubuntu-latest using the project's existing Gradle setup.
+#   Produces a debug APK (no signing keys required) suitable for internal
+#   testing via sideloading or Firebase App Distribution.
+#
+#   Optional: Firebase App Distribution upload.
+#   Required secrets (leave unset to skip):
+#     FIREBASE_APP_ID_ANDROID  – Android app ID from the Firebase console
+#                                (e.g. 1:1234567890:android:abcdef123456)
+#     FIREBASE_TOKEN           – Firebase CI token (`firebase login:ci`)
+#                                or use GOOGLE_APPLICATION_CREDENTIALS with
+#                                a service-account JSON stored as a secret.
+#
+# iOS build
+# ---------
+#   Uses EAS Build (Expo Application Services) which handles code-signing
+#   in Expo's cloud – no local macOS machine required.
+#   The 'preview' profile produces an ad-hoc IPA distributed via a QR-code
+#   install link that EAS generates automatically.
+#
+#   Required secrets:
+#     EXPO_TOKEN               – Expo account token (`npx expo login`, then
+#                                `npx expo token:create`)
+#
+#   One-time setup (done once by a human with repo/Expo-account access):
+#     1. `npx eas init`            – register the project on Expo's dashboard
+#     2. `npx eas credentials`     – configure Apple distribution certificate
+#                                    and provisioning profile for 'preview'
+#     3. Add owner + projectId to app.json (EAS prints these after `eas init`)
+#
+#   Optional: Firebase App Distribution upload (requires downloading the IPA
+#   from EAS first – see commented-out step below).
+#   Required secrets (leave unset to skip):
+#     FIREBASE_APP_ID_IOS      – iOS app ID from the Firebase console
+#     FIREBASE_TOKEN           – same token as for Android
+
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to build and distribute
+        required: true
+        default: android
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Android – local Gradle build → artifact upload → Firebase (optional)
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  build-android:
+    name: Build Android APK
+    if: >
+      github.event_name == 'push' ||
+      inputs.platform == 'android' ||
+      inputs.platform == 'all'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        # Debug builds require no signing keys and are fully self-contained.
+        # For a signed release APK, store your keystore as base64 in secret
+        # ANDROID_KEYSTORE_BASE64 and configure signing in android/app/build.gradle.
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yahtzeeCompanion-${{ github.ref_name }}-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Distribute to Firebase App Distribution
+        # Skipped automatically when the required secrets are not configured.
+        if: >
+          env.FIREBASE_APP_ID_ANDROID != '' &&
+          env.FIREBASE_TOKEN != ''
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          token: ${{ secrets.FIREBASE_TOKEN }}
+          file: android/app/build/outputs/apk/debug/app-debug.apk
+          groups: testers
+          releaseNotes: "Build from ${{ github.ref_name }} (${{ github.sha }})"
+        env:
+          FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# iOS – EAS Build (cloud) → internal distribution link
+# ─────────────────────────────────────────────────────────────────────────────
+  build-ios:
+    name: Build iOS IPA via EAS
+    if: >
+      github.event_name == 'push' ||
+      inputs.platform == 'ios' ||
+      inputs.platform == 'all'
+    runs-on: ubuntu-latest  # EAS Build runs in Expo's cloud; no macOS runner needed.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Setup EAS CLI and authenticate
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS IPA via EAS (preview profile – internal distribution)
+        # EAS builds the IPA in the cloud and publishes a QR-code install link.
+        # Testers visit the link on their iOS device to install directly.
+        # Requires: EXPO_TOKEN secret + one-time `eas init` + `eas credentials`.
+        run: eas build --platform ios --profile preview --non-interactive
+
+      # ── Optional: upload IPA to Firebase App Distribution ──────────────────
+      # To enable, download the IPA artifact URL from EAS and pass it here.
+      # Uncomment and adapt the following steps once Firebase secrets are set.
+      #
+      # - name: Get IPA download URL from EAS
+      #   id: eas_url
+      #   run: |
+      #     URL=$(eas build:list --platform ios --limit 1 --json | \
+      #           node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>\
+      #             console.log(JSON.parse(d)[0].artifacts.buildUrl))")
+      #     echo "ipa_url=$URL" >> "$GITHUB_OUTPUT"
+      #
+      # - name: Download IPA
+      #   run: curl -L "${{ steps.eas_url.outputs.ipa_url }}" -o app.ipa
+      #
+      # - name: Distribute iOS build to Firebase App Distribution
+      #   if: >
+      #     env.FIREBASE_APP_ID_IOS != '' &&
+      #     env.FIREBASE_TOKEN != ''
+      #   uses: wzieba/Firebase-Distribution-Github-Action@v1
+      #   with:
+      #     appId: ${{ secrets.FIREBASE_APP_ID_IOS }}
+      #     token: ${{ secrets.FIREBASE_TOKEN }}
+      #     file: app.ipa
+      #     groups: testers
+      #     releaseNotes: "Build from ${{ github.ref_name }} (${{ github.sha }})"
+      #   env:
+      #     FIREBASE_APP_ID_IOS: ${{ secrets.FIREBASE_APP_ID_IOS }}
+      #     FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
