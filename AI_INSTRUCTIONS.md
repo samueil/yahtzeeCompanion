@@ -23,7 +23,7 @@ npm run ios            # Build and launch on iOS simulator/device (requires Xcod
 npm run android        # Build and launch on Android (requires Java 17 + Android SDK)
 npm run web            # Web version with mock DiceScanner (no camera)
 npm test               # Run Jest test suite
-npm run lint           # ESLint (auto-fixes Tailwind class order via Prettier)
+npm run lint           # ESLint check only; use `npm run lint -- --fix` to apply auto-fixes
 npx tsc --noEmit       # TypeScript type check only
 npm run build:check    # Expo export bundle check (runs in CI)
 ```
