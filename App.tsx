@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unknown-property */
 import { Canvas } from '@react-three/fiber/native';
 import {
   CalculatorIcon,
@@ -16,7 +17,7 @@ import type { Category } from './src/domain/category';
 import { calculatePotentialScore } from './src/lib/scoring';
 import { colors } from './src/theme/colors';
 
-const App = () => {
+export const App = () => {
   const [dice, setDice] = useState<number[]>([1, 1, 1, 1, 1]);
   const [locked, setLocked] = useState<boolean[]>([
     false,
@@ -35,7 +36,7 @@ const App = () => {
     Platform.OS === 'web' ? 'dice' : 'camera',
   );
 
-  // State para sa 3D animation control
+  // State for 3D animation control
   const [isRolling, setIsRolling] = useState<boolean>(false);
 
   const handleDieClick = (index: number) => {
@@ -403,4 +404,5 @@ const App = () => {
   );
 };
 
+// eslint-disable-next-line import/no-default-export
 export default App;

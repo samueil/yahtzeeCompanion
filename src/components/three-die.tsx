@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unknown-property */
 import { useTexture } from '@react-three/drei/native';
 import { useFrame } from '@react-three/fiber/native';
 import { Asset } from 'expo-asset'; // Import mo ito
