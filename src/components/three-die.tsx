@@ -10,17 +10,27 @@ interface ThreeDieProps {
   isRolling: boolean;
 }
 
-
 const DieMesh = ({ value, isRolling }: ThreeDieProps) => {
   const meshRef = useRef<Mesh>(null);
 
-
-  const tex1 = useTexture(Asset.fromModule(require('../../assets/dice/die1.png')).uri) as THREE.Texture;
-  const tex2 = useTexture(Asset.fromModule(require('../../assets/dice/die2.png')).uri) as THREE.Texture;
-  const tex3 = useTexture(Asset.fromModule(require('../../assets/dice/die3.png')).uri) as THREE.Texture;
-  const tex4 = useTexture(Asset.fromModule(require('../../assets/dice/die4.png')).uri) as THREE.Texture;
-  const tex5 = useTexture(Asset.fromModule(require('../../assets/dice/die5.png')).uri) as THREE.Texture;
-  const tex6 = useTexture(Asset.fromModule(require('../../assets/dice/die6.png')).uri) as THREE.Texture;
+  const tex1 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die1.png')).uri,
+  ) as THREE.Texture;
+  const tex2 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die2.png')).uri,
+  ) as THREE.Texture;
+  const tex3 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die3.png')).uri,
+  ) as THREE.Texture;
+  const tex4 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die4.png')).uri,
+  ) as THREE.Texture;
+  const tex5 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die5.png')).uri,
+  ) as THREE.Texture;
+  const tex6 = useTexture(
+    Asset.fromModule(require('../../assets/dice/die6.png')).uri,
+  ) as THREE.Texture;
 
   useFrame((_, delta) => {
     if (isRolling && meshRef.current) {
@@ -45,7 +55,6 @@ const DieMesh = ({ value, isRolling }: ThreeDieProps) => {
   );
 };
 
-
 export const ThreeDie = (props: ThreeDieProps) => {
   return (
     <Suspense fallback={null}>
@@ -57,15 +66,40 @@ export const ThreeDie = (props: ThreeDieProps) => {
 const applyRotation = (mesh: Mesh, value: number) => {
   const targetRotation = new THREE.Euler();
   switch (value) {
-    case 1: targetRotation.set(0, Math.PI / 2, 0); break;
-    case 2: targetRotation.set(0, -Math.PI / 2, 0); break;
-    case 3: targetRotation.set(-Math.PI / 2, 0, 0); break;
-    case 4: targetRotation.set(Math.PI / 2, 0, 0); break;
-    case 5: targetRotation.set(0, 0, 0); break;
-    case 6: targetRotation.set(Math.PI, 0, 0); break;
-    default: targetRotation.set(0, 0, 0);
+    case 1:
+      targetRotation.set(0, Math.PI / 2, 0);
+      break;
+    case 2:
+      targetRotation.set(0, -Math.PI / 2, 0);
+      break;
+    case 3:
+      targetRotation.set(-Math.PI / 2, 0, 0);
+      break;
+    case 4:
+      targetRotation.set(Math.PI / 2, 0, 0);
+      break;
+    case 5:
+      targetRotation.set(0, 0, 0);
+      break;
+    case 6:
+      targetRotation.set(Math.PI, 0, 0);
+      break;
+    default:
+      targetRotation.set(0, 0, 0);
   }
-  mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, targetRotation.x, 0.15);
-  mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, targetRotation.y, 0.15);
-  mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, targetRotation.z, 0.15);
+  mesh.rotation.x = THREE.MathUtils.lerp(
+    mesh.rotation.x,
+    targetRotation.x,
+    0.15,
+  );
+  mesh.rotation.y = THREE.MathUtils.lerp(
+    mesh.rotation.y,
+    targetRotation.y,
+    0.15,
+  );
+  mesh.rotation.z = THREE.MathUtils.lerp(
+    mesh.rotation.z,
+    targetRotation.z,
+    0.15,
+  );
 };
