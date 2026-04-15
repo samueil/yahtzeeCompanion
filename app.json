@@ -6,7 +6,9 @@
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.anonymous.yahtzeeCompanion",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       [
@@ -14,7 +16,8 @@
         {
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "ios": {
       "infoPlist": {
