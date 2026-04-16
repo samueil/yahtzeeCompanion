@@ -1,5 +1,7 @@
+import type { DieValue } from './die-value';
+
 export interface DiceDetection {
-  value: number;
+  value: DieValue;
   x: number;
   y: number;
   width: number;

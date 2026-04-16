@@ -9,20 +9,21 @@ import {
 } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
+import { AROverlay } from './ar-overlay';
+import { CaptureButton } from './capture-button';
+import { CloseButton } from './close-button';
 import type { DiceDetection } from '../domain/dice-detection';
+import type { DieValue } from '../domain/die-value';
 import { useCameraPermissions } from '../hooks/use-camera-permissions';
 import {
   calculateCoordinateMapping,
   CONFIDENCE_THRESHOLD,
   processDiceFrame,
 } from '../lib/dice-processor';
-import { AROverlay } from './ar-overlay';
-import { CaptureButton } from './capture-button';
-import { CloseButton } from './close-button';
 
 interface DiceScannerProps {
   neededCount: number;
-  onScanComplete: (diceValues: number[]) => void;
+  onScanComplete: (diceValues: DieValue[]) => void;
   onClose: () => void;
 }
 
@@ -32,14 +33,14 @@ export const DiceScanner = ({
   onClose,
 }: DiceScannerProps) => {
   const device = useCameraDevice('back');
-  const { permissionError } = useCameraPermissions();
+  const { hasPermission, permissionError } = useCameraPermissions();
 
   const [isDiceDetected, setIsDiceDetected] = useState<boolean>(false);
 
   // Note: We avoid useSharedValue/runOnJS to fix Reanimated 3+ bridge issues.
   // Instead we directly rely on the built-in Worklet capabilities of VisionCamera.
   const [detections, setDetections] = useState<DiceDetection[]>([]);
-  const [finalValues, setFinalValues] = useState<number[]>([]);
+  const [finalValues, setFinalValues] = useState<DieValue[]>([]);
   const setDetectionsJS = Worklets.createRunOnJS(setDetections);
   const setFinalValuesJS = Worklets.createRunOnJS(setFinalValues);
   const onScanCompleteJS = Worklets.createRunOnJS(onScanComplete);
@@ -123,7 +124,7 @@ export const DiceScanner = ({
     [tfliteModel, resize, containerLayout, neededCount],
   );
 
-  if (!device && !permissionError)
+  if ((!device || !hasPermission) && !permissionError)
     return (
       <View className="absolute inset-0 z-50 bg-black">
         <Text className="flex-1 items-center justify-center text-lg text-white">

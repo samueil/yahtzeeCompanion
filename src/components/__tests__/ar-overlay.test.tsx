@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react-native';
 import React from 'react';
+import { render, screen } from '@testing-library/react-native';
 import type { DiceDetection } from '../../domain/dice-detection';
 import { AROverlay } from '../ar-overlay';
 

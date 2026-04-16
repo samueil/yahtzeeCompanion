@@ -1,75 +1,165 @@
-import classNames from 'classnames';
-import { CheckIcon } from 'lucide-nativewind';
-import React from 'react';
-import { Pressable, View } from 'react-native';
+import React, { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber/native';
+import type { Group, Object3D } from 'three';
+import { EdgesGeometry, Euler, MathUtils } from 'three';
+import { RoundedBoxGeometry } from 'three-stdlib';
+import type { DieValue } from '../domain/die-value';
 
-interface DieProps {
-  value: number;
-  locked: boolean;
-  onClick: () => void;
-  disabled: boolean;
-  size?: 'large' | 'small';
+interface ThreeDieProps {
+  value: DieValue;
+  isUiBlocked: boolean;
 }
 
-export const Die = ({
-  value,
-  locked,
-  onClick,
-  size = 'large',
-  disabled,
-}: DieProps) => {
-  const shouldShowDot = (index: number, val: number): boolean => {
-    const patterns: Record<number, number[]> = {
-      1: [4],
-      2: [2, 6],
-      3: [2, 4, 6],
-      4: [0, 2, 6, 8],
-      5: [0, 2, 4, 6, 8],
-      6: [0, 2, 3, 5, 6, 8],
-    };
+type Axis = 'x' | 'y' | 'z';
 
-    return patterns[val]?.includes(index);
-  };
+interface FaceDotsProps {
+  value: DieValue;
+  axis: Axis;
+  dir: 1 | -1;
+}
 
-  const dieSize = size === 'large' ? 'w-16 h-16' : 'w-8 h-8';
-  const dotSize = size === 'large' ? 'w-3 h-3' : 'w-1.5 h-1.5';
-  const padding = size === 'large' ? 'p-2' : 'p-1';
+const HALF = 1.4;
+const DOT_RADIUS = 0.22;
+const SURFACE = 1.41;
+
+export const DOT_POSITIONS: Record<DieValue, [number, number][]> = {
+  1: [[0, 0]],
+  2: [
+    [-0.5, -0.5],
+    [0.5, 0.5],
+  ],
+  3: [
+    [-0.5, 0.5],
+    [0, 0],
+    [0.5, -0.5],
+  ],
+  4: [
+    [-0.5, -0.5],
+    [0.5, -0.5],
+    [-0.5, 0.5],
+    [0.5, 0.5],
+  ],
+  5: [
+    [-0.5, -0.5],
+    [0.5, -0.5],
+    [0, 0],
+    [-0.5, 0.5],
+    [0.5, 0.5],
+  ],
+  6: [
+    [-0.5, -0.5],
+    [0.5, -0.5],
+    [-0.5, 0],
+    [0.5, 0],
+    [-0.5, 0.5],
+    [0.5, 0.5],
+  ],
+};
+
+const DOT_ROTATIONS: Record<string, [number, number, number]> = {
+  'z+1': [0, 0, 0],
+  'z-1': [0, Math.PI, 0],
+  'x+1': [0, Math.PI / 2, 0],
+  'x-1': [0, -Math.PI / 2, 0],
+  'y+1': [-Math.PI / 2, 0, 0],
+  'y-1': [Math.PI / 2, 0, 0],
+};
+
+const FaceDots = ({ value, axis, dir }: FaceDotsProps) => {
+  const rotation = DOT_ROTATIONS[`${axis}${dir > 0 ? '+1' : '-1'}`];
+  const offset = SURFACE * dir;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Die with value ${value}${locked ? ', locked' : ''}`}
-      onPress={onClick}
-      disabled={disabled}
-      className={classNames(
-        `relative flex-wrap justify-center rounded-lg border bg-white ${dieSize} ${padding}`,
-        {
-          'border-destructive opacity-90': locked && !disabled,
-          'active:bg-gray-100': !locked && !disabled,
-          'border-disabled': disabled,
-        },
-      )}
-    >
-      <View className="size-full flex-row flex-wrap">
-        {[...Array(9)].map((_, i) => (
-          <View key={i} className="flex size-1/3 items-center justify-center">
-            {shouldShowDot(i, value) && (
-              <View
-                className={classNames('rounded-full', dotSize, {
-                  'bg-disabled': disabled,
-                  'bg-black': !disabled,
-                })}
-              />
-            )}
-          </View>
-        ))}
-      </View>
+    <>
+      {DOT_POSITIONS[value].map(([dx, dy], i) => {
+        const pos: [number, number, number] =
+          axis === 'z'
+            ? [dx * HALF, dy * HALF, offset]
+            : axis === 'x'
+              ? [offset, dy * HALF, dx * HALF]
+              : [dx * HALF, offset, dy * HALF];
 
-      {locked && (
-        <View className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 shadow-md">
-          <CheckIcon size={12} strokeWidth={3} color="white" />
-        </View>
-      )}
-    </Pressable>
+        return (
+          <mesh key={i} position={pos} rotation={rotation}>
+            <circleGeometry args={[DOT_RADIUS, 32]} />
+            <meshStandardMaterial
+              color="#1a1a1a"
+              roughness={0.1}
+              metalness={0.3}
+            />
+          </mesh>
+        );
+      })}
+    </>
+  );
+};
+
+const applyRotation = (obj: Object3D, value: DieValue) => {
+  const target = new Euler();
+
+  switch (value) {
+    case 1:
+      target.set(0, -Math.PI / 2, 0);
+      break;
+    case 2:
+      target.set(0, Math.PI / 2, 0);
+      break;
+    case 3:
+      target.set(Math.PI / 2, 0, 0);
+      break;
+    case 4:
+      target.set(-Math.PI / 2, 0, 0);
+      break;
+    case 5:
+      target.set(0, 0, 0);
+      break;
+    case 6:
+      target.set(Math.PI, 0, 0);
+      break;
+    default:
+      target.set(0, 0, 0);
+  }
+
+  obj.rotation.x = MathUtils.lerp(obj.rotation.x, target.x, 0.15);
+  obj.rotation.y = MathUtils.lerp(obj.rotation.y, target.y, 0.15);
+  obj.rotation.z = MathUtils.lerp(obj.rotation.z, target.z, 0.15);
+};
+
+export const Die = ({ value, isUiBlocked: isUiBlocked }: ThreeDieProps) => {
+  const groupRef = useRef<Group>(null);
+
+  const geometry = useMemo(
+    () => new RoundedBoxGeometry(2.8, 2.8, 2.8, 6, 0.4),
+    [],
+  );
+  const edges = useMemo(() => new EdgesGeometry(geometry, 15), [geometry]);
+
+  useFrame((_, delta) => {
+    if (isUiBlocked && groupRef.current) {
+      groupRef.current.rotation.x += delta * 12;
+      groupRef.current.rotation.y += delta * 18;
+      groupRef.current.rotation.z += delta * 10;
+    } else if (groupRef.current) {
+      applyRotation(groupRef.current, value);
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh geometry={geometry}>
+        <meshStandardMaterial color="#FFFFFF" roughness={0.1} metalness={0.3} />
+      </mesh>
+
+      <lineSegments geometry={edges}>
+        <lineBasicMaterial color="#000000" transparent opacity={0.1} />
+      </lineSegments>
+
+      <FaceDots value={5} axis="z" dir={1} />
+      <FaceDots value={6} axis="z" dir={-1} />
+      <FaceDots value={1} axis="x" dir={1} />
+      <FaceDots value={2} axis="x" dir={-1} />
+      <FaceDots value={3} axis="y" dir={1} />
+      <FaceDots value={4} axis="y" dir={-1} />
+    </group>
   );
 };

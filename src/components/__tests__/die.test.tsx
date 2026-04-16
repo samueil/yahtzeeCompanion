@@ -1,38 +1,43 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
-import React from 'react';
-import { Die } from '../die';
+import { DOT_POSITIONS } from '../die';
 
-describe('Die Component', () => {
-  it('renders correctly with the correct accessible name', () => {
-    render(
-      <Die value={3} locked={false} onClick={() => {}} disabled={false} />,
-    );
-
+describe('DOT_POSITIONS', () => {
+  it('defines entries for every valid face value 1–6', () => {
     expect(
-      screen.getByRole('button', { name: 'Die with value 3' }),
-    ).toBeVisible();
+      Object.keys(DOT_POSITIONS)
+        .map(Number)
+        .sort((a, b) => a - b),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it('renders correctly when locked', () => {
-    render(<Die value={6} locked={true} onClick={() => {}} disabled={false} />);
-
-    expect(
-      screen.getByRole('button', { name: 'Die with value 6, locked' }),
-    ).toBeVisible();
+  it('has exactly 1 dot for face value 1', () => {
+    expect(DOT_POSITIONS[1]).toHaveLength(1);
   });
 
-  it('calls onClick when pressed using userEvent', async () => {
-    const mockOnClick = jest.fn();
-    const user = userEvent.setup();
+  it('has exactly 2 dots for face value 2', () => {
+    expect(DOT_POSITIONS[2]).toHaveLength(2);
+  });
 
-    render(
-      <Die value={1} locked={false} onClick={mockOnClick} disabled={false} />,
-    );
+  it('has exactly 3 dots for face value 3', () => {
+    expect(DOT_POSITIONS[3]).toHaveLength(3);
+  });
 
-    const dieButton = screen.getByRole('button', { name: 'Die with value 1' });
+  it('has exactly 4 dots for face value 4', () => {
+    expect(DOT_POSITIONS[4]).toHaveLength(4);
+  });
 
-    await user.press(dieButton);
+  it('has exactly 5 dots for face value 5', () => {
+    expect(DOT_POSITIONS[5]).toHaveLength(5);
+  });
 
-    expect(mockOnClick).toHaveBeenCalledTimes(1);
+  it('has exactly 6 dots for face value 6', () => {
+    expect(DOT_POSITIONS[6]).toHaveLength(6);
+  });
+
+  it('each position is a two-element tuple of numbers', () => {
+    for (const positions of Object.values(DOT_POSITIONS)) {
+      for (const pos of positions) {
+        expect(pos).toEqual([expect.any(Number), expect.any(Number)]);
+      }
+    }
   });
 });

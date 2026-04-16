@@ -1,4 +1,5 @@
 import type { DiceDetection } from '../domain/dice-detection';
+import type { DieValue } from '../domain/die-value';
 
 export const CONFIDENCE_THRESHOLD = 0.15;
 
@@ -143,7 +144,7 @@ export function processDiceFrame({
         y: realCy - realH / 2,
         width: realW,
         height: realH,
-        value: classIdx + 1,
+        value: (classIdx + 1) as DieValue,
         confidence: maxProb,
       });
     }
