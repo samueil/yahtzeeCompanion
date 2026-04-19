@@ -93,8 +93,12 @@ android {
         applicationId 'com.anonymous.yahtzeeCompanion'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (findProperty('versionCode') ?: 1).toInteger()
-        versionName new groovy.json.JsonSlurper().parseText(file('../../package.json').text).version
+        // Dynamic versioning from CI and package.json
+        def vCode = project.findProperty('versionCode') ?: "1"
+        versionCode vCode.toInteger()
+
+        def packageJson = new groovy.json.JsonSlurper().parseText(rootProject.file('../package.json').text)
+        versionName packageJson.version
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
