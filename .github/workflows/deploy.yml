@@ -105,26 +105,26 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Build debug APK
-        # Debug builds require no signing keys and are fully self-contained.
-        # For a signed release APK, store your keystore as base64 in secret
-        # ANDROID_KEYSTORE_BASE64 and configure signing in android/app/build.gradle.
+      - name: Build release APK
+        # A release build bundles the JavaScript so the app can run independently
+        # of the Metro bundler. The android/app/build.gradle is currently configured
+        # to sign the release variant with the debug keystore for easy distribution.
         run: |
           cd android
-          ./gradlew assembleDebug -PversionCode=${{ github.run_number }} --no-daemon
+          ./gradlew assembleRelease -PversionCode=${{ github.run_number }} --no-daemon
 
       - name: Normalize Artifact Name
         id: name_step
         run: |
           # Replace forward slashes in the branch/tag name with hyphens
           CLEAN_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
-          echo "artifact_name=yahtzeeCompanion-${CLEAN_NAME}-debug.apk" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=yahtzeeCompanion-${CLEAN_NAME}-release.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.name_step.outputs.artifact_name }}
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -137,7 +137,7 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
           token: ${{ secrets.FIREBASE_TOKEN }}
-          file: android/app/build/outputs/apk/debug/app-debug.apk
+          file: android/app/build/outputs/apk/release/app-release.apk
           groups: testers
           releaseNotes: |
             ${{ github.event.head_commit.message }}
