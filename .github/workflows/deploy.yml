@@ -113,10 +113,17 @@ jobs:
           cd android
           ./gradlew assembleDebug --no-daemon
 
+      - name: Normalize Artifact Name
+        id: name_step
+        run: |
+          # Replace forward slashes in the branch/tag name with hyphens
+          CLEAN_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          echo "artifact_name=yahtzeeCompanion-${CLEAN_NAME}-debug.apk" >> "$GITHUB_OUTPUT"
+
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: yahtzeeCompanion-${{ github.ref_name }}-debug.apk
+          name: ${{ steps.name_step.outputs.artifact_name }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -142,6 +149,9 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   build-ios:
     name: Build iOS IPA via EAS
+    # Set to true so that a failure (e.g. missing paid Apple Developer account)
+    # does not block the overall workflow or branch protection rules.
+    continue-on-error: true
     if: >
       github.event_name == 'push' ||
       inputs.platform == 'ios' ||
