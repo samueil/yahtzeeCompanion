@@ -1,12 +1,14 @@
 {
   "expo": {
-    "name": "yahtzeeCompanion",
+    "name": "Yahtzee Companion",
     "slug": "yahtzeeCompanion",
+    "version": "1.0.0-dev",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.anonymous.yahtzeeCompanion",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": ["android.permission.CAMERA"],
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
@@ -14,13 +16,15 @@
         {
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
         }
-      ]
+      ],
+      "@react-native-firebase/app"
     ],
     "ios": {
       "infoPlist": {
         "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera."
       },
-      "bundleIdentifier": "com.anonymous.yahtzeeCompanion"
+      "bundleIdentifier": "com.anonymous.yahtzeeCompanion",
+      "googleServicesFile": "./GoogleService-Info.plist"
     }
   }
 }

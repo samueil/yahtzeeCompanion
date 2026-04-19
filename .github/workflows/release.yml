@@ -1,0 +1,243 @@
+# Release Cycle Automation
+#
+# Manually triggered workflow that:
+#   1. Finalizes (or bumps) the current version by stripping any pre-release
+#      suffix (-dev, -SNAPSHOT, timestamp variants, etc.) and optionally
+#      applying a semver bump.
+#   2. Updates package.json and app.json to the release version.
+#   3. Generates a CHANGELOG.md entry from commits since the previous tag.
+#   4. Commits the release changes and creates an annotated git tag.
+#   5. Publishes a GitHub Release with the generated changelog.
+#   6. Bumps the patch version and appends -dev to prepare the next cycle.
+#   7. Commits and pushes both commits plus the tag.
+#
+# Required repository permissions: Settings → Actions → General →
+#   Workflow permissions → "Read and write permissions".
+#
+# For repos with branch-protection rules that block direct pushes, create a
+# Personal Access Token (PAT) with `repo` scope, store it as the secret
+# RELEASE_PAT, and replace `secrets.GITHUB_TOKEN` in the checkout step.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: >
+          Version bump to apply after stripping any pre-release suffix.
+          'finalize' cuts a release from the current dev version without any
+          additional increment (e.g. 1.2.0-dev → 1.2.0).
+        required: true
+        default: finalize
+        type: choice
+        options:
+          - finalize
+          - patch
+          - minor
+          - major
+      release_version:
+        description: >
+          Override the release version (e.g. 1.2.3).
+          Leave empty to derive it automatically from the current package.json
+          version (strips -dev, -SNAPSHOT, or timestamp suffixes, then applies
+          the bump above).
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release – Version, Changelog, Tag, GitHub Release, Next Dev
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (full history for changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Configure Git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # ──────────────────────────────────────────────────────────────
+      # Compute the release version and the next-dev version.
+      #
+      # Logic:
+      #   current (package.json) → strip suffix → base
+      #   base + optional bump   → RELEASE
+      #   RELEASE + patch+1 + -dev → NEXT_DEV
+      #
+      # Suffix stripping handles:
+      #   -dev, -SNAPSHOT, -alpha, -beta, -rc
+      #   -20240101120000   (14-digit timestamp)
+      #   -20240101T120000Z (ISO-style timestamp)
+      # ──────────────────────────────────────────────────────────────
+      - name: Compute release and next-dev versions
+        id: ver
+        run: |
+          if [ -n "${{ inputs.release_version }}" ]; then
+            RELEASE="${{ inputs.release_version }}"
+          else
+            CURRENT=$(node -p "require('./package.json').version")
+            echo "Current version: ${CURRENT}"
+
+            # Strip any pre-release / timestamp suffix.
+            # Pattern covers: -dev, -SNAPSHOT, -alpha, -beta, -rc,
+            # ISO-style timestamps (-20240101T120000Z), and plain
+            # 14-digit timestamps (-20240101120000).
+            BASE=$(echo "$CURRENT" | \
+              sed -E 's/-(dev|SNAPSHOT|alpha|beta|rc|[0-9]{8}T?[0-9]{6}Z?)([.-].*)?$//')
+
+            MAJOR=$(echo "$BASE" | cut -d. -f1)
+            MINOR=$(echo "$BASE" | cut -d. -f2)
+            PATCH=$(echo "$BASE" | cut -d. -f3)
+
+            case "${{ inputs.bump }}" in
+              major)    RELEASE="$((MAJOR + 1)).0.0" ;;
+              minor)    RELEASE="${MAJOR}.$((MINOR + 1)).0" ;;
+              patch)    RELEASE="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+              finalize) RELEASE="${BASE}" ;;
+            esac
+          fi
+
+          REL_MAJOR=$(echo "$RELEASE" | cut -d. -f1)
+          REL_MINOR=$(echo "$RELEASE" | cut -d. -f2)
+          REL_PATCH=$(echo "$RELEASE" | cut -d. -f3)
+          NEXT_DEV="${REL_MAJOR}.${REL_MINOR}.$((REL_PATCH + 1))-dev"
+
+          echo "release=${RELEASE}"   >> "$GITHUB_OUTPUT"
+          echo "next_dev=${NEXT_DEV}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${RELEASE}"      >> "$GITHUB_OUTPUT"
+
+          echo "🚀 Release version : ${RELEASE}"
+          echo "🔧 Next dev version: ${NEXT_DEV}"
+
+      # ──────────────────────────────────────────────────────────────
+      # Write release version into package.json and app.json.
+      # ──────────────────────────────────────────────────────────────
+      - name: Apply release version to package.json and app.json
+        env:
+          VERSION: ${{ steps.ver.outputs.release }}
+        run: |
+          node - <<'JSEOF'
+          const fs  = require('fs');
+          const ver = process.env.VERSION;
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.version = ver;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = ver;
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+
+          console.log('Set version to', ver);
+          JSEOF
+
+      # ──────────────────────────────────────────────────────────────
+      # Generate a CHANGELOG entry from commits since the previous tag.
+      # The entry is prepended to CHANGELOG.md and exported as a step
+      # output so it can be used in the GitHub Release body.
+      # ──────────────────────────────────────────────────────────────
+      - name: Generate changelog entry
+        id: changelog
+        env:
+          VERSION: ${{ steps.ver.outputs.release }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            COMMITS=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
+          fi
+
+          [ -z "$COMMITS" ] && COMMITS="- No notable changes since last release."
+
+          ENTRY="## [${VERSION}] - ${DATE}"$'\n'"${COMMITS}"
+
+          if [ -f CHANGELOG.md ]; then
+            EXISTING=$(cat CHANGELOG.md)
+            printf '%s\n\n%s\n' "$ENTRY" "$EXISTING" > CHANGELOG.md
+          else
+            printf '# Changelog\n\nAll notable changes to this project are documented here.\n\n%s\n' "$ENTRY" > CHANGELOG.md
+          fi
+
+          # Export the entry as a multi-line output for the GitHub Release step.
+          {
+            echo "entry<<CHANGELOG_EOF"
+            echo "$ENTRY"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # ──────────────────────────────────────────────────────────────
+      # Commit the release, tag it, push, then create the GitHub Release.
+      # ──────────────────────────────────────────────────────────────
+      - name: Commit release changes
+        run: |
+          git add package.json app.json CHANGELOG.md
+          git commit -m "chore: release ${{ steps.ver.outputs.tag }}"
+
+      - name: Create annotated tag
+        run: git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
+
+      # ──────────────────────────────────────────────────────────────
+      # Prepare next-dev version and commit before the single push so
+      # the tag still points to the release commit while the branch
+      # already advances to the next development cycle.
+      # ──────────────────────────────────────────────────────────────
+      - name: Apply next-dev version to package.json and app.json
+        env:
+          VERSION: ${{ steps.ver.outputs.next_dev }}
+        run: |
+          node - <<'JSEOF'
+          const fs  = require('fs');
+          const ver = process.env.VERSION;
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.version = ver;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.version = ver;
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+
+          console.log('Set version to', ver);
+          JSEOF
+
+      - name: Commit next-dev version
+        run: |
+          git add package.json app.json
+          git commit -m "chore: begin development of ${{ steps.ver.outputs.next_dev }} [skip ci]"
+
+      - name: Push commits and tag
+        run: |
+          git push origin HEAD:${{ github.ref_name }} --follow-tags
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createRelease({
+              owner:      context.repo.owner,
+              repo:       context.repo.repo,
+              tag_name:   '${{ steps.ver.outputs.tag }}',
+              name:       'Release ${{ steps.ver.outputs.tag }}',
+              body:       `${{ steps.changelog.outputs.entry }}`,
+              draft:      false,
+              prerelease: false,
+            });
+            core.info('GitHub Release created for ${{ steps.ver.outputs.tag }}');
