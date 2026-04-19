@@ -40,11 +40,15 @@ jobs:
 
       - name: Inject Firebase Config (Android)
         if: success()
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > google-services.json
+        env:
+          JSON_DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$JSON_DATA" > google-services.json
 
       - name: Inject Firebase Config (iOS)
         if: success()
-        run: echo "${{ secrets.GOOGLE_SERVICE_XML }}" > GoogleService-Info.plist
+        env:
+          XML_DATA: ${{ secrets.GOOGLE_SERVICE_XML }}
+        run: echo "$XML_DATA" > GoogleService-Info.plist
 
       - name: Check App Bundle
         run: npm run build:check
