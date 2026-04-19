@@ -111,7 +111,7 @@ jobs:
         # ANDROID_KEYSTORE_BASE64 and configure signing in android/app/build.gradle.
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug -PversionCode=${{ github.run_number }} --no-daemon
 
       - name: Normalize Artifact Name
         id: name_step
@@ -139,7 +139,9 @@ jobs:
           token: ${{ secrets.FIREBASE_TOKEN }}
           file: android/app/build/outputs/apk/debug/app-debug.apk
           groups: testers
-          releaseNotes: 'Build from ${{ github.ref_name }} (${{ github.sha }})'
+          releaseNotes: |
+            ${{ github.event.head_commit.message }}
+            - ${{ github.sha }}
         env:
           FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
