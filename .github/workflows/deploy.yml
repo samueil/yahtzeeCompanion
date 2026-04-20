@@ -163,7 +163,6 @@ jobs:
     # does not block the overall workflow or branch protection rules.
     continue-on-error: true
     if: >
-      github.event_name == 'push' ||
       inputs.platform == 'ios' ||
       inputs.platform == 'all'
     runs-on: ubuntu-latest # EAS Build runs in Expo's cloud; no macOS runner needed.
