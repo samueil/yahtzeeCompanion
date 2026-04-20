@@ -49,6 +49,6 @@
     "typescript": "~6.0.2"
   },
   "name": "yahtzeecompanion",
-  "version": "1.0.0-dev",
+  "version": "1.0.0",
   "private": true
 }
