@@ -105,6 +105,14 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
+      - name: Get commit message
+        id: commit_msg
+        run: |
+          MSG=$(git log -1 --pretty=%B)
+          echo "message<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MSG" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Build release APK
         # A release build bundles the JavaScript so the app can run independently
         # of the Metro bundler. The android/app/build.gradle is currently configured
@@ -140,7 +148,7 @@ jobs:
           file: android/app/build/outputs/apk/release/app-release.apk
           groups: testers
           releaseNotes: |
-            ${{ github.event.head_commit.message }}
+            ${{ steps.commit_msg.outputs.message }}
             - ${{ github.sha }}
         env:
           FIREBASE_APP_ID_ANDROID: ${{ secrets.FIREBASE_APP_ID_ANDROID }}
