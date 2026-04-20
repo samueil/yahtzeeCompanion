@@ -11,6 +11,7 @@ on:
       - 'package*.json'
   schedule:
     - cron: '30 5 1 * *' # Runs at 05:30 on the 1st of every month
+  workflow_dispatch:
 
 jobs:
   analyze-android:
@@ -25,6 +26,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Inject Firebase Config (Android)
+        env:
+          JSON_DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$JSON_DATA" > android/app/google-services.json
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

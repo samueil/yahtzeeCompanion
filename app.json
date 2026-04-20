@@ -25,6 +25,12 @@
       },
       "bundleIdentifier": "com.anonymous.yahtzeeCompanion",
       "googleServicesFile": "./GoogleService-Info.plist"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "58b0f35c-2db5-4c67-aa39-33c56fcc3e00"
+      }
+    },
+    "owner": "samueil"
   }
 }
