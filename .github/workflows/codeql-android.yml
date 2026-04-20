@@ -11,6 +11,7 @@ on:
       - 'package*.json'
   schedule:
     - cron: '30 5 1 * *' # Runs at 05:30 on the 1st of every month
+  workflow_dispatch:
 
 jobs:
   analyze-android:
