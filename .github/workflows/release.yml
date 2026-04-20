@@ -231,8 +231,6 @@ jobs:
           git commit -m "chore: begin development of ${{ steps.ver.outputs.next_dev }} [skip ci]"
 
       - name: Push commits and tag
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git push origin HEAD:${{ github.ref_name }} --follow-tags
 
