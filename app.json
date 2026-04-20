@@ -2,7 +2,7 @@
   "expo": {
     "name": "Yahtzee Companion",
     "slug": "yahtzeeCompanion",
-    "version": "1.0.0",
+    "version": "1.0.1-dev",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
