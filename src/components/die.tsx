@@ -125,7 +125,7 @@ const applyRotation = (obj: Object3D, value: DieValue) => {
   obj.rotation.z = MathUtils.lerp(obj.rotation.z, target.z, 0.15);
 };
 
-export const Die = ({ value, isUiBlocked: isUiBlocked }: DieProps) => {
+export const Die = ({ value, isUiBlocked }: DieProps) => {
   const groupRef = useRef<Group>(null);
 
   const geometry = useMemo(
