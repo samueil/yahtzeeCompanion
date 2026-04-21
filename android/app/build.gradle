@@ -94,10 +94,21 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Dynamic versioning from CI and package.json
-        def vCode = project.findProperty('versionCode') ?: "1"
-        versionCode vCode.toInteger()
-
         def packageJson = new groovy.json.JsonSlurper().parseText(rootProject.file('../package.json').text)
+        def versionString = packageJson.version.replaceAll(/[-].*/, "")
+        def versionParts = versionString.tokenize('.')
+        def major = versionParts.size() > 0 ? versionParts[0].toInteger() : 0
+        def minor = versionParts.size() > 1 ? versionParts[1].toInteger() : 0
+        def patch = versionParts.size() > 2 ? versionParts[2].toInteger() : 0
+
+        // Base code: MMmmpp0000 (e.g. 1.2.3 -> 102030000)
+        def baseCode = (major * 100000000) + (minor * 1000000) + (patch * 10000)
+
+        // CI injects github.run_number. For local builds, we use 9999 so that
+        // a local build is always considered "newer" than any CI build of the same version.
+        def buildNumber = (project.findProperty('versionCode') ?: 9999).toInteger()
+
+        versionCode baseCode + buildNumber
         versionName packageJson.version
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""

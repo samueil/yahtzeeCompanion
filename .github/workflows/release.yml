@@ -196,7 +196,7 @@ jobs:
       - name: Commit release changes
         run: |
           git add package.json app.json CHANGELOG.md
-          git commit -m "chore: release ${{ steps.ver.outputs.tag }}"
+          git commit -m "release ${{ steps.ver.outputs.tag }}"
 
       - name: Create annotated tag
         run: git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
@@ -228,7 +228,7 @@ jobs:
       - name: Commit next-dev version
         run: |
           git add package.json app.json
-          git commit -m "chore: begin development of ${{ steps.ver.outputs.next_dev }} [skip ci]"
+          git commit -m "begin development of ${{ steps.ver.outputs.next_dev }} [skip ci]"
 
       - name: Push commits and tag
         run: |
