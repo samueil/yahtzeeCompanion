@@ -107,7 +107,7 @@ const App = () => {
       const newDice = dice.map((val, idx) => {
         if (locked[idx]) return val;
 
-        return (Math.floor(Math.random() * 6) + 1) as DieValue;
+        return Math.ceil(Math.random() * 6) as DieValue;
       });
 
       setDice(newDice);
