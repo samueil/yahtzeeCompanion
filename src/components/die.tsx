@@ -5,7 +5,7 @@ import { EdgesGeometry, Euler, MathUtils } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { DieValue } from '../domain/die-value';
 
-interface ThreeDieProps {
+interface DieProps {
   value: DieValue;
   isUiBlocked: boolean;
 }
@@ -125,7 +125,7 @@ const applyRotation = (obj: Object3D, value: DieValue) => {
   obj.rotation.z = MathUtils.lerp(obj.rotation.z, target.z, 0.15);
 };
 
-export const Die = ({ value, isUiBlocked: isUiBlocked }: ThreeDieProps) => {
+export const Die = ({ value, isUiBlocked: isUiBlocked }: DieProps) => {
   const groupRef = useRef<Group>(null);
 
   const geometry = useMemo(
