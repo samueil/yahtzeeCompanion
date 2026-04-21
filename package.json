@@ -9,6 +9,7 @@
     "build:check": "expo export"
   },
   "dependencies": {
+    "@react-native-firebase/app": "^24.0.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
@@ -55,6 +56,6 @@
     "typescript": "~6.0.2"
   },
   "name": "yahtzeecompanion",
-  "version": "1.0.0",
+  "version": "1.0.1-dev",
   "private": true
 }
