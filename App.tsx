@@ -326,7 +326,7 @@ const App = () => {
                     disabled={!diceRolled || isUiBlocked}
                     className="absolute inset-0 z-40 bg-transparent"
                   />
-                  {rollsLeft < 3 && !locked[idx] && !isUiBlocked && (
+                  {rollsLeft < 3 && !locked[idx] && !isUiBlocked && inputMode === 'camera' &&(
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
