@@ -17,12 +17,47 @@ module.exports = {
     'prettier/prettier': 'error',
     'no-unused-vars': 'warn',
     'import/no-default-export': 'error',
+    'import/order': [
+      'error',
+      {
+        groups: ['builtin', 'external', 'internal', ['parent', 'sibling']],
+        pathGroups: [
+          {
+            pattern: 'react',
+            group: 'external',
+            position: 'before',
+          },
+        ],
+        pathGroupsExcludedImportTypes: ['react'],
+        alphabetize: {
+          order: 'asc',
+          caseInsensitive: true,
+        },
+      },
+    ],
     'testing-library/no-node-access': 'off',
     'object-shorthand': ['error', 'always'],
     'prefer-const': 'error',
     'padding-line-between-statements': [
       'error',
       { blankLine: 'always', prev: '*', next: 'return' },
+    ],
+    'react/no-unknown-property': [
+      'error',
+      {
+        ignore: [
+          'args',
+          'color',
+          'geometry',
+          'intensity',
+          'metalness',
+          'opacity',
+          'position',
+          'rotation',
+          'roughness',
+          'transparent',
+        ],
+      },
     ],
     'react/jsx-handler-names': [
       'error',

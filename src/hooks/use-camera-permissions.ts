@@ -19,5 +19,5 @@ export function useCameraPermissions() {
     handlePermissions();
   }, [hasPermission, requestPermission]);
 
-  return { permissionError };
+  return { hasPermission, permissionError };
 }

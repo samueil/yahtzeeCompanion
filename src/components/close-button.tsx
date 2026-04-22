@@ -1,5 +1,5 @@
-import { XIcon } from 'lucide-nativewind';
 import React from 'react';
+import { XIcon } from 'lucide-nativewind';
 import { Pressable } from 'react-native';
 
 interface CloseButtonProps {

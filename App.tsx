@@ -1,22 +1,27 @@
-// App.tsx
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Canvas } from '@react-three/fiber/native';
 import {
   CalculatorIcon,
   CameraIcon,
+  DicesIcon,
   Edit2Icon,
   RotateCcwIcon,
 } from 'lucide-nativewind';
-import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import './global.css';
 import { DiceScanner, Die } from './src/components';
 import { CATEGORIES } from './src/constants/categories';
 import type { Category } from './src/domain/category';
+import type { DieValue } from './src/domain/die-value';
 import { calculatePotentialScore } from './src/lib/scoring';
 import { colors } from './src/theme/colors';
 
+const INPUT_MODE_KEY = '@input_mode_preference';
+
 const App = () => {
-  const [dice, setDice] = useState<number[]>([1, 1, 1, 1, 1]);
+  const [dice, setDice] = useState<DieValue[]>([1, 1, 1, 1, 1]);
   const [locked, setLocked] = useState<boolean[]>([
     false,
     false,
@@ -24,15 +29,43 @@ const App = () => {
     false,
     false,
   ]);
-  const [diceRolled, setDiceRolled] = useState<boolean>(false);
-  const [rollsLeft, setRollsLeft] = useState<number>(3);
+  const [diceRolled, setDiceRolled] = useState(false);
+  const [rollsLeft, setRollsLeft] = useState(3);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [showScanner, setShowScanner] = useState<boolean>(false);
   const [gameState, setGameState] = useState<'playing' | 'finished'>('playing');
   const [turn, setTurn] = useState<number>(1);
+  const [isUiBlocked, setIsUiBlocked] = useState(false);
+  const [inputMode, setInputMode] = useState<'camera' | 'dice'>(
+    Platform.OS === 'web' ? 'dice' : 'camera',
+  );
+
+  useEffect(() => {
+    const loadStoredPreference = async () => {
+      try {
+        const savedValue = await AsyncStorage.getItem(INPUT_MODE_KEY);
+        if (savedValue !== null) {
+          setInputMode(savedValue as 'camera' | 'dice');
+        }
+      } catch (e) {
+        console.error('Failed to load input mode preference', e);
+      }
+    };
+    loadStoredPreference();
+  }, []);
+
+  const handleToggleInputMode = async () => {
+    const nextMode = inputMode === 'camera' ? 'dice' : 'camera';
+    setInputMode(nextMode);
+    try {
+      await AsyncStorage.setItem(INPUT_MODE_KEY, nextMode);
+    } catch (e) {
+      console.error('Failed to save input mode preference', e);
+    }
+  };
 
   const handleDieClick = (index: number) => {
-    if (rollsLeft === 3) return;
+    if (rollsLeft === 3 || isUiBlocked) return;
     toggleLock(index);
   };
 
@@ -43,12 +76,14 @@ const App = () => {
   };
 
   const cycleDieValue = (index: number) => {
+    if (isUiBlocked) return;
     const newDice = [...dice];
-    newDice[index] = newDice[index] === 6 ? 1 : newDice[index] + 1;
+    newDice[index] =
+      newDice[index] === 6 ? 1 : ((newDice[index] + 1) as DieValue);
     setDice(newDice);
   };
 
-  const handleScanComplete = (detectedValues: number[]) => {
+  const handleScanComplete = (detectedValues: DieValue[]) => {
     const newDice = [...dice];
     let detectionIndex = 0;
     newDice.forEach((_, idx) => {
@@ -65,8 +100,25 @@ const App = () => {
     setShowScanner(false);
   };
 
+  const handleRandomRoll = () => {
+    if (rollsLeft === 0 || isUiBlocked) return;
+    setIsUiBlocked(true);
+    setTimeout(() => {
+      const newDice = dice.map((val, idx) => {
+        if (locked[idx]) return val;
+
+        return Math.ceil(Math.random() * 6) as DieValue;
+      });
+
+      setDice(newDice);
+      setDiceRolled(true);
+      setRollsLeft((prev) => prev - 1);
+      setIsUiBlocked(false);
+    }, 1000);
+  };
+
   const selectCategory = (cat: Category) => {
-    if (rollsLeft === 3 || scores[cat.id] !== undefined) return;
+    if (rollsLeft === 3 || scores[cat.id] !== undefined || isUiBlocked) return;
     const score = calculatePotentialScore(dice, cat);
     setScores((prev) => ({ ...prev, [cat.id]: score }));
     setDice([1, 1, 1, 1, 1]);
@@ -108,36 +160,53 @@ const App = () => {
     <SafeAreaProvider>
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 overflow-hidden">
-          <View className="z-10 flex-row items-center justify-between bg-primary-dark p-4 text-inverted shadow-lg">
+          {/* Header Section */}
+          <View className="z-10 flex-row items-center justify-between bg-primary-dark p-4 shadow-lg">
             <View>
-              <Text className="flex-row items-center gap-2 text-xl font-bold text-primary-light">
+              <View className="flex-row items-center">
                 <CalculatorIcon
                   size={20}
                   color={colors['primary-light']}
                   className="mr-2"
                 />
-                {'  '}
-                Yahtzee Companion
-              </Text>
+                <Text className="ml-2 text-xl font-bold text-primary-light">
+                  Yahtzee Companion
+                </Text>
+              </View>
               <Text className="text-xs text-muted">Turn {turn}/13</Text>
             </View>
-            <View className="items-end">
-              <Text className="text-xs font-bold uppercase tracking-widest text-muted">
-                Total
-              </Text>
-              <Text className="text-2xl font-bold leading-7 text-inverted">
-                {totalScore}
-              </Text>
+
+            <View className="flex-row items-center gap-4">
+              <Pressable
+                onPress={handleToggleInputMode}
+                className="items-center justify-center rounded-full bg-white/10 p-2 active:bg-white/20"
+              >
+                {inputMode === 'camera' ? (
+                  <DicesIcon size={20} color={colors['primary-light']} />
+                ) : (
+                  <CameraIcon size={20} color={colors['primary-light']} />
+                )}
+                <Text className="text-xs font-bold text-muted">Mode</Text>
+              </Pressable>
+              <View className="items-end">
+                <Text className="text-xs font-bold uppercase tracking-widest text-muted">
+                  Total
+                </Text>
+                <Text className="text-2xl font-bold leading-7 text-white">
+                  {totalScore}
+                </Text>
+              </View>
             </View>
           </View>
 
           <ScrollView
             className="flex-1 px-3 pt-4"
-            contentContainerClassName="pb-[200px]"
+            contentContainerClassName="pb-[220px]"
             showsVerticalScrollIndicator={false}
           >
-            <View className="mb-4 overflow-hidden rounded-lg border-border bg-card">
-              <View className="border-b border-b-slate-100 bg-background-subtle px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted">
+            {/* Upper Section */}
+            <View className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
+              <View className="border-b border-b-slate-100 bg-background-subtle px-4 py-2">
                 <Text className="text-xs font-bold uppercase tracking-wider text-muted">
                   Upper Section
                 </Text>
@@ -149,18 +218,16 @@ const App = () => {
                 return (
                   <Pressable
                     key={cat.id}
-                    disabled={rollsLeft === 3 || taken}
+                    disabled={rollsLeft === 3 || taken || isUiBlocked}
                     onPress={() => selectCategory(cat)}
                     className={`w-full flex-row items-center justify-between border-b border-b-slate-100 px-4 py-3 ${
                       taken
-                        ? 'bg-background-subtle text-disabled'
-                        : 'bg-card active:bg-primary-hover'
+                        ? 'bg-background-subtle'
+                        : 'bg-card active:bg-slate-50'
                     }`}
                   >
                     <Text
-                      className={`text font-medium ${
-                        taken && 'text-disabled line-through'
-                      }`}
+                      className={`font-medium ${taken ? 'text-disabled line-through' : 'text-text'}`}
                     >
                       {cat.label}
                     </Text>
@@ -178,20 +245,19 @@ const App = () => {
                   </Pressable>
                 );
               })}
-              <View className="flex-row items-center justify-between border-t border-t-slate-200 bg-background-subtle px-4 py-2 text-sm">
-                <Text className="text-slate-500">Bonus (63+)</Text>
+              <View className="flex-row items-center justify-between border-t border-t-slate-200 bg-background-subtle px-4 py-2">
+                <Text className="text-sm text-slate-500">Bonus (63+)</Text>
                 <Text
-                  className={`text-black ${
-                    upperScore >= 63 && 'font-bold text-success'
-                  }`}
+                  className={`text-black ${upperScore >= 63 ? 'font-bold text-success' : ''}`}
                 >
                   {upperScore}/63 ({bonus})
                 </Text>
               </View>
             </View>
 
-            <View className="mb-4 overflow-hidden rounded-lg border-border bg-card">
-              <View className="border-b border-b-slate-100 bg-background-subtle px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted">
+            {/* Lower Section */}
+            <View className="mb-4 overflow-hidden rounded-lg border border-border bg-card">
+              <View className="border-b border-b-slate-100 bg-background-subtle px-4 py-2">
                 <Text className="text-xs font-bold uppercase tracking-wider text-muted">
                   Lower Section
                 </Text>
@@ -203,18 +269,16 @@ const App = () => {
                 return (
                   <Pressable
                     key={cat.id}
-                    disabled={rollsLeft === 3 || taken}
+                    disabled={rollsLeft === 3 || taken || isUiBlocked}
                     onPress={() => selectCategory(cat)}
                     className={`w-full flex-row items-center justify-between border-b border-b-slate-100 px-4 py-3 ${
                       taken
-                        ? 'bg-background-subtle text-disabled'
-                        : 'bg-card active:bg-primary-hover'
+                        ? 'bg-background-subtle'
+                        : 'bg-card active:bg-slate-50'
                     }`}
                   >
                     <Text
-                      className={`text font-medium ${
-                        taken && 'text-disabled line-through'
-                      }`}
+                      className={`font-medium ${taken ? 'text-disabled line-through' : 'text-text'}`}
                     >
                       {cat.label}
                     </Text>
@@ -235,69 +299,112 @@ const App = () => {
             </View>
           </ScrollView>
 
-          <View className="absolute inset-x-0 bottom-0 z-20 w-full border-t border-t-slate-200 bg-card shadow-lg">
-            <View className="relative flex-row justify-center gap-4 bg-background-subtle/80 px-6 pb-10 pt-6 backdrop-blur-sm">
+          {/* Footer controls */}
+          <View className="absolute inset-x-0 bottom-0 z-20 w-full border-t border-t-slate-200 bg-card shadow-2xl">
+            <View className="relative flex-row justify-center gap-2 bg-slate-50/90 px-2 pb-10 pt-6 backdrop-blur-md">
               {dice.map((val, idx) => (
                 <View key={idx} className="relative items-center">
-                  <Die
-                    value={val}
-                    locked={locked[idx]}
-                    disabled={!diceRolled}
-                    onClick={() => handleDieClick(idx)}
-                  />
-                  {rollsLeft < 3 && !locked[idx] && (
-                    <Pressable
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        cycleDieValue(idx);
-                      }}
-                      className="absolute bottom-[-28px] left-1/2 z-30 -ml-3.5 size-7 items-center justify-center rounded-full border border-white bg-slate-200 p-1.5 shadow-sm"
-                    >
-                      <Edit2Icon
-                        size={12}
-                        strokeWidth={3}
-                        color={colors.icon}
+                  <View
+                    className={`h-16 w-16 ${locked[idx] ? 'scale-90 opacity-60' : 'scale-100'}`}
+                  >
+                    <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+                      <ambientLight intensity={3.5} />
+                      <pointLight position={[10, 10, 10]} intensity={2.5} />
+                      <pointLight
+                        position={[-10, -10, -10]}
+                        intensity={2.5}
+                        color="#ffffff"
                       />
-                    </Pressable>
+                      <Die
+                        value={val}
+                        isUiBlocked={isUiBlocked && !locked[idx]}
+                      />
+                    </Canvas>
+                  </View>
+                  <Pressable
+                    onPress={() => handleDieClick(idx)}
+                    disabled={!diceRolled || isUiBlocked}
+                    className="absolute inset-0 z-40 bg-transparent"
+                  />
+                  {rollsLeft < 3 &&
+                    !locked[idx] &&
+                    !isUiBlocked &&
+                    inputMode === 'camera' && (
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          cycleDieValue(idx);
+                        }}
+                        className="absolute bottom-[-28px] left-1/2 z-50 -ml-3.5 h-7 w-7 items-center justify-center rounded-full border border-white bg-slate-200 p-1.5 shadow-sm active:bg-slate-300"
+                      >
+                        <Edit2Icon
+                          size={12}
+                          strokeWidth={3}
+                          color={colors.icon}
+                        />
+                      </Pressable>
+                    )}
+
+                  {locked[idx] && (
+                    <View className="absolute -top-2 right-0 z-50 rounded-full bg-primary px-2 py-0.5 shadow-sm">
+                      <Text className="text-[8px] font-bold uppercase text-white">
+                        Locked
+                      </Text>
+                    </View>
                   )}
                 </View>
               ))}
             </View>
 
-            <View className="flex-col items-center justify-center gap-4 bg-card p-4 pt-0">
+            <View className="bg-card p-4 pt-0">
               {gameState === 'finished' ? (
                 <Pressable
                   onPress={handleResetGame}
-                  className="w-full flex-row items-center justify-center gap-2 rounded-lg bg-primary py-5 font-bold text-inverted shadow-indigo-200/50"
+                  className="w-full flex-row items-center justify-center gap-2 rounded-xl bg-primary py-5 shadow-lg active:opacity-90"
                 >
-                  <RotateCcwIcon size={20} color={'white'} className="mr-2" />
-                  <Text className="text-base font-bold text-inverted">
+                  <RotateCcwIcon size={20} color={'white'} />
+                  <Text className="ml-2 text-lg font-bold text-white">
                     New Game
                   </Text>
                 </Pressable>
               ) : (
                 <View className="w-full flex-row items-center gap-4">
                   <Pressable
-                    onPress={() => setShowScanner(true)}
-                    disabled={rollsLeft === 0}
-                    className={`relative h-14 flex-1 flex-row items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary font-bold text-inverted shadow-indigo-200/50 ${
-                      rollsLeft === 0 && 'bg-slate-400 opacity-50 shadow-none'
+                    onPress={() => {
+                      if (inputMode === 'camera') {
+                        setShowScanner(true);
+                      } else {
+                        handleRandomRoll();
+                      }
+                    }}
+                    disabled={rollsLeft === 0 || isUiBlocked}
+                    className={`h-16 flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-primary shadow-lg active:opacity-90 ${
+                      rollsLeft === 0 || isUiBlocked
+                        ? 'bg-slate-400 opacity-50'
+                        : ''
                     }`}
                   >
-                    <CameraIcon size={24} color={'white'} />
-                    <Text className="text-base font-bold text-inverted">
-                      {rollsLeft === 3 ? 'Start Roll' : 'Scan Dice'}
+                    {inputMode === 'camera' ? (
+                      <CameraIcon size={24} color={'white'} />
+                    ) : (
+                      <DicesIcon size={24} color={'white'} />
+                    )}
+                    <Text className="ml-2 text-lg font-bold text-white">
+                      {rollsLeft === 3
+                        ? 'Start Roll'
+                        : inputMode === 'camera'
+                          ? 'Scan Dice'
+                          : isUiBlocked
+                            ? 'Rolling...'
+                            : 'Roll Dice'}
                     </Text>
                   </Pressable>
-
-                  <View className="h-14 w-16 flex-col items-center justify-center rounded-lg border-border bg-background">
-                    <Text className="text-xs font-bold uppercase text-muted">
+                  <View className="h-16 w-16 flex-col items-center justify-center rounded-xl border border-border bg-slate-50">
+                    <Text className="text-[10px] font-bold uppercase text-muted">
                       Left
                     </Text>
                     <Text
-                      className={`text-xl font-bold text-text ${
-                        rollsLeft === 0 && 'text-destructive-light'
-                      }`}
+                      className={`text-2xl font-bold ${rollsLeft === 0 ? 'text-destructive-light' : 'text-text'}`}
                     >
                       {rollsLeft}
                     </Text>
@@ -307,7 +414,7 @@ const App = () => {
             </View>
           </View>
 
-          {showScanner && (
+          {showScanner && inputMode === 'camera' && (
             <DiceScanner
               neededCount={neededDiceCount}
               onScanComplete={handleScanComplete}

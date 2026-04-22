@@ -6,7 +6,7 @@ A React Native mobile app that uses a YOLOv8 machine learning model (via TensorF
 
 | Layer | Tech |
 |-------|------|
-| Framework | Expo 55 + React Native 0.83.4 + React 19 |
+| Framework | Expo 55 + React Native 0.83.6 + React 19 |
 | Language | TypeScript 6 (strict mode) |
 | Styling | NativeWind 4 (Tailwind CSS utility classes on native) |
 | ML inference | react-native-fast-tflite + YOLOv8 TFLite model |

@@ -177,8 +177,27 @@ jobs:
           ENTRY="## [${VERSION}] - ${DATE}"$'\n'"${COMMITS}"
 
           if [ -f CHANGELOG.md ]; then
-            EXISTING=$(cat CHANGELOG.md)
-            printf '%s\n\n%s\n' "$ENTRY" "$EXISTING" > CHANGELOG.md
+            if grep -q '^# Changelog$' CHANGELOG.md; then
+              awk -v entry="$ENTRY" '
+                BEGIN { inserted = 0 }
+                /^## / && !inserted {
+                  printf "%s\n\n", entry
+                  inserted = 1
+                }
+                { print }
+                END {
+                  if (!inserted) {
+                    if (NR > 0) {
+                      print ""
+                    }
+                    print entry
+                  }
+                }
+              ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+            else
+              EXISTING=$(cat CHANGELOG.md)
+              printf '%s\n\n%s\n' "$ENTRY" "$EXISTING" > CHANGELOG.md
+            fi
           else
             printf '# Changelog\n\nAll notable changes to this project are documented here.\n\n%s\n' "$ENTRY" > CHANGELOG.md
           fi
