@@ -10,3 +10,7 @@ jest.mock('react-native-worklets-core', () => {
     },
   };
 });
+
+jest.mock('@react-three/fiber/native', () => ({
+  useFrame: jest.fn(),
+}));

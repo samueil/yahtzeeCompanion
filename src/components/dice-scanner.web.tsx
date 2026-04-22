@@ -2,12 +2,13 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { CaptureButton } from './capture-button';
 import { CloseButton } from './close-button';
+import type { DieValue } from '../domain/die-value';
 
 const IS_CAMERA_READY = true;
 
 interface DiceScannerProps {
   neededCount: number;
-  onScanComplete: (diceValues: number[]) => void;
+  onScanComplete: (diceValues: DieValue[]) => void;
   onClose: () => void;
 }
 
@@ -17,8 +18,9 @@ export const DiceScanner = ({
   onClose,
 }: DiceScannerProps) => {
   const handleSimulatedScan = () => {
-    const mockResult = Array.from({ length: neededCount }, () =>
-      Math.ceil(Math.random() * 6),
+    const mockResult = Array.from(
+      { length: neededCount },
+      () => Math.ceil(Math.random() * 6) as DieValue,
     );
     onScanComplete(mockResult);
   };
