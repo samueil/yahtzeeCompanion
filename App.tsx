@@ -326,21 +326,24 @@ const App = () => {
                     disabled={!diceRolled || isUiBlocked}
                     className="absolute inset-0 z-40 bg-transparent"
                   />
-                  {rollsLeft < 3 && !locked[idx] && !isUiBlocked && inputMode === 'camera' &&(
-                    <Pressable
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        cycleDieValue(idx);
-                      }}
-                      className="absolute bottom-[-28px] left-1/2 z-50 -ml-3.5 h-7 w-7 items-center justify-center rounded-full border border-white bg-slate-200 p-1.5 shadow-sm active:bg-slate-300"
-                    >
-                      <Edit2Icon
-                        size={12}
-                        strokeWidth={3}
-                        color={colors.icon}
-                      />
-                    </Pressable>
-                  )}
+                  {rollsLeft < 3 &&
+                    !locked[idx] &&
+                    !isUiBlocked &&
+                    inputMode === 'camera' && (
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          cycleDieValue(idx);
+                        }}
+                        className="absolute bottom-[-28px] left-1/2 z-50 -ml-3.5 h-7 w-7 items-center justify-center rounded-full border border-white bg-slate-200 p-1.5 shadow-sm active:bg-slate-300"
+                      >
+                        <Edit2Icon
+                          size={12}
+                          strokeWidth={3}
+                          color={colors.icon}
+                        />
+                      </Pressable>
+                    )}
 
                   {locked[idx] && (
                     <View className="absolute -top-2 right-0 z-50 rounded-full bg-primary px-2 py-0.5 shadow-sm">
