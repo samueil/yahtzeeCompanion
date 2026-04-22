@@ -19,8 +19,7 @@
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera."
         }
       ],
-      "@react-native-firebase/app",
-      "expo-asset"
+      "@react-native-firebase/app"
     ],
     "ios": {
       "infoPlist": {
