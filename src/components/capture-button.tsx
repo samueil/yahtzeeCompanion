@@ -18,6 +18,7 @@ export const CaptureButton = ({
   <View className="absolute inset-x-0 bottom-10 z-10 items-center justify-center">
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={isReady ? label : 'Waiting for dice...'}
       onPress={onPress}
       disabled={disabled}
       className={classNames(

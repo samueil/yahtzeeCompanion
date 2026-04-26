@@ -9,9 +9,8 @@ describe('CloseButton', () => {
 
     render(<CloseButton onPress={mockOnPress} />);
 
-    // Since it's a pressable wrapping an icon, it might not have an explicit label.
-    // We get the button by role. If there are multiple we'd need a testId, but here it's isolated.
-    const button = screen.getByRole('button');
+    // Icon-only controls should be queried by role and accessible name.
+    const button = screen.getByRole('button', { name: /close/i });
     expect(button).toBeVisible();
 
     await user.press(button);

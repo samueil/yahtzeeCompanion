@@ -221,10 +221,13 @@ For 3D components like `Die`, use the specialized test renderer to assert on the
 import ReactTestRenderer from '@react-three/test-renderer';
 import { Die } from '../die';
 
-it('renders a 3D group with a mesh', async () => {
+it('renders a 3D group with meshes', async () => {
   const renderer = await ReactTestRenderer.create(<Die value={1} isUiBlocked={false} />);
-  const mesh = renderer.allByTypes('Mesh');
-  expect(mesh).toHaveLength(1);
+  const group = renderer.allByTypes('Group');
+  const meshes = renderer.allByTypes('Mesh');
+
+  expect(group).toHaveLength(1);
+  expect(meshes.length).toBeGreaterThan(0);
 });
 ```
 
