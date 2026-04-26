@@ -29,7 +29,7 @@ The blank line before `expect` is not enforced by ESLint (no rule targets specif
 |---|---|
 | Jest (jest-expo preset) | Test runner |
 | @testing-library/react-native | Component rendering, queries, and custom matchers (`toBeVisible`, etc.) |
-| jest-setup.js | Global mocks for native modules |
+| jest-setup.js | Global mocks for native modules; registers `@testing-library/react-native` custom matchers |
 
 Run tests: `npm test`
 Type-check separately: `npx tsc --noEmit` (CI runs both)
