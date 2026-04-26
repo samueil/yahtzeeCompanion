@@ -13,7 +13,7 @@ A React Native mobile app that uses a YOLOv8 machine learning model (via TensorF
 | Camera | react-native-vision-camera 4 |
 | Frame threading | react-native-worklets-core (off-thread frame processing) |
 | Icons | lucide-nativewind |
-| Testing | Jest (jest-expo preset) + @testing-library/react-native |
+| Testing | Jest (jest-expo preset) + `@testing-library/react-native` |
 
 ## 📐 Architecture
 
