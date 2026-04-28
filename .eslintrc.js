@@ -106,5 +106,11 @@ module.exports = {
         'react/jsx-handler-names': 'off',
       },
     },
+    {
+      files: ['src/components/__tests__/die.test.tsx'],
+      rules: {
+        'testing-library/await-async-queries': 'off',
+      },
+    },
   ],
 };

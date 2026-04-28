@@ -54,22 +54,22 @@ describe('Die', () => {
         <Die value={1} isUiBlocked={false} />,
       );
 
-      const groups = renderer.scene.findAllByType('group');
+      const groups = renderer.scene.findAllByType('Group');
       expect(groups).toHaveLength(1);
 
-      const meshes = renderer.scene.findAllByType('mesh');
+      const meshes = renderer.scene.findAllByType('Mesh');
       const mainBody = meshes.filter(
         (mesh) =>
-          mesh.findAllByType('meshStandardMaterial').length > 0 &&
-          mesh.findAllByType('circleGeometry').length === 0,
+          mesh.findAllByType('MeshStandardMaterial').length > 0 &&
+          mesh.findAllByType('CircleGeometry').length === 0,
       );
       expect(mainBody).toHaveLength(1);
 
-      const edges = renderer.scene.findAllByType('lineSegments');
+      const edges = renderer.scene.findAllByType('LineSegments');
       expect(edges).toHaveLength(1);
 
       const dots = meshes.filter(
-        (mesh) => mesh.findAllByType('circleGeometry').length > 0,
+        (mesh) => mesh.findAllByType('CircleGeometry').length > 0,
       );
 
       // 1 + 2 + 3 + 4 + 5 + 6 = 21 dots total across all faces
