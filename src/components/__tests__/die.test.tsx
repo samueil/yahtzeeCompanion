@@ -54,31 +54,22 @@ describe('Die', () => {
         <Die value={1} isUiBlocked={false} />,
       );
 
-      // Get the root group node
-      const rootGroup = renderer.toTree()![0];
-      expect(rootGroup.type).toBe('group');
+      const groups = renderer.scene.findAllByType('group');
+      expect(groups).toHaveLength(1);
 
-      // Filter children to find the specific parts
-      const mainBody = rootGroup.children.filter(
-        (node: any) =>
-          node.type === 'mesh' &&
-          node.children.some(
-            (child: any) => child.type === 'meshStandardMaterial',
-          ) &&
-          !node.children.some((child: any) => child.type === 'circleGeometry'),
+      const meshes = renderer.scene.findAllByType('mesh');
+      const mainBody = meshes.filter(
+        (mesh) =>
+          mesh.findAllByType('meshStandardMaterial').length > 0 &&
+          mesh.findAllByType('circleGeometry').length === 0,
       );
       expect(mainBody).toHaveLength(1);
 
-      const edges = rootGroup.children.filter(
-        (node: any) => node.type === 'lineSegments',
-      );
+      const edges = renderer.scene.findAllByType('lineSegments');
       expect(edges).toHaveLength(1);
 
-      // The dots are meshes with a circleGeometry child
-      const dots = rootGroup.children.filter(
-        (node: any) =>
-          node.type === 'mesh' &&
-          node.children.some((child: any) => child.type === 'circleGeometry'),
+      const dots = meshes.filter(
+        (mesh) => mesh.findAllByType('circleGeometry').length > 0,
       );
 
       // 1 + 2 + 3 + 4 + 5 + 6 = 21 dots total across all faces
