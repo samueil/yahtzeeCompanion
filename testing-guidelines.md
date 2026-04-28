@@ -28,9 +28,8 @@ The blank line before `expect` is not enforced by ESLint (no rule targets specif
 | Tool | Role |
 |---|---|
 | Jest (jest-expo preset) | Test runner |
-| @testing-library/react-native | Component rendering + queries |
-| @testing-library/jest-native | Custom matchers (`toBeVisible`, etc.) |
-| jest-setup.js | Global mocks for native modules |
+| @testing-library/react-native | Component rendering, queries, and custom matchers (`toBeVisible`, etc.) |
+| jest-setup.js | Global mocks for native modules; registers `@testing-library/react-native` custom matchers |
 
 Run tests: `npm test`
 Type-check separately: `npx tsc --noEmit` (CI runs both)
@@ -213,18 +212,32 @@ expect(getByRole('button', { name: 'Die with value 3' })).toBeVisible();
 
 `screen` always reflects the currently rendered output. Destructuring binds queries to one render call and becomes stale after re-renders.
 
-### DO — query by role and accessible name
+### DO — use `@react-three/test-renderer` for 3D components
+
+For 3D components like `Die`, use the specialized test renderer to assert on the scene graph.
 
 ```ts
 // src/components/__tests__/die.test.tsx
-it('renders with an accessible name', () => {
-  render(<Die value={3} locked={false} onClick={() => {}} disabled={false} />);
-  expect(screen.getByRole('button', { name: 'Die with value 3' })).toBeVisible();
-});
+import ReactTestRenderer from '@react-three/test-renderer';
+import { Die } from '../die';
 
-it('includes locked state in the accessible name', () => {
-  render(<Die value={6} locked={true} onClick={() => {}} disabled={false} />);
-  expect(screen.getByRole('button', { name: 'Die with value 6, locked' })).toBeVisible();
+it('renders a 3D group with meshes', async () => {
+  const renderer = await ReactTestRenderer.create(<Die value={1} isUiBlocked={false} />);
+  const group = renderer.allByTypes('Group');
+  const meshes = renderer.allByTypes('Mesh');
+
+  expect(group).toHaveLength(1);
+  expect(meshes.length).toBeGreaterThan(0);
+});
+```
+
+### DO — query by role and accessible name for 2D UI
+
+```ts
+// src/components/__tests__/capture-button.test.tsx
+it('renders with an accessible name', () => {
+  render(<CaptureButton onPress={() => {}} disabled={false} isReady={true} />);
+  expect(screen.getByRole('button', { name: 'TAP TO CAPTURE' })).toBeVisible();
 });
 ```
 

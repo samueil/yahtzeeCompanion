@@ -56,7 +56,7 @@ export const DOT_POSITIONS: Record<DieValue, [number, number][]> = {
   ],
 };
 
-const DOT_ROTATIONS: Record<string, [number, number, number]> = {
+export const DOT_ROTATIONS: Record<string, [number, number, number]> = {
   'z+1': [0, 0, 0],
   'z-1': [0, Math.PI, 0],
   'x+1': [0, Math.PI / 2, 0],
@@ -94,7 +94,7 @@ const FaceDots = ({ value, axis, dir }: FaceDotsProps) => {
   );
 };
 
-const applyRotation = (obj: Object3D, value: DieValue) => {
+export const applyRotation = (obj: Object3D, value: DieValue) => {
   const target = new Euler();
 
   switch (value) {

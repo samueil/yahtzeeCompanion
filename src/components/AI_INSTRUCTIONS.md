@@ -23,14 +23,12 @@ import { Die, DiceScanner, AROverlay, CaptureButton, CloseButton } from './src/c
 
 ### `Die`
 
-Renders a single die face.
+Renders a 3D die face using `@react-three/fiber`.
 
 ```ts
 interface DieProps {
-  value: number;      // 1–6
-  locked: boolean;    // shows locked visual state
-  disabled: boolean;  // prevents tap interaction (before first roll)
-  onClick: () => void;
+  value: DieValue;    // 1–6
+  isUiBlocked: boolean; // triggers spinning animation when true
 }
 ```
 

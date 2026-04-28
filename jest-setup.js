@@ -1,3 +1,5 @@
+import '@testing-library/react-native/matchers';
+
 jest.mock('react-native-reanimated', () => {
   return require('react-native-reanimated/mock');
 });
