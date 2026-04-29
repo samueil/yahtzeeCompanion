@@ -39,7 +39,7 @@
     "@types/jest": "~29.5.14",
     "@types/react": "~19.2.10",
     "@types/three": "^0.182.0",
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.58.2",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
