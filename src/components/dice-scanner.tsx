@@ -20,6 +20,10 @@ import {
   CONFIDENCE_THRESHOLD,
   processDiceFrame,
 } from '../lib/dice-processor';
+import {
+  createInitialTrackerState,
+  updateDiceTracks,
+} from '../lib/dice-tracker';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -61,6 +65,8 @@ export const DiceScanner = ({
     height: number;
   } | null>(null);
 
+  const trackerState = Worklets.createSharedValue(createInitialTrackerState());
+
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
@@ -100,7 +106,7 @@ export const DiceScanner = ({
           const outputTensor = outputs[0] as Float32Array;
           const outputShape = tfliteModel.outputs[0].shape;
 
-          const finalDetections = processDiceFrame({
+          const rawDetections = processDiceFrame({
             outputTensor,
             outputShape,
             cropY: mapping.screenCropY,
@@ -109,11 +115,17 @@ export const DiceScanner = ({
             confidenceThreshold: CONFIDENCE_THRESHOLD,
           });
 
-          setDetectionsJS(finalDetections);
+          const { state: newState, stabilizedDetections } = updateDiceTracks(
+            trackerState.value,
+            rawDetections,
+          );
+          trackerState.value = newState;
 
-          if (finalDetections.length >= neededCount) {
+          setDetectionsJS(stabilizedDetections);
+
+          if (stabilizedDetections.length >= neededCount) {
             setFinalValuesJS(
-              finalDetections.slice(0, neededCount).map((d) => d.value),
+              stabilizedDetections.slice(0, neededCount).map((d) => d.value),
             );
           }
         } catch (error: any) {
