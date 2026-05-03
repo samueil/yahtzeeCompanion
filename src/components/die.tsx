@@ -1,9 +1,9 @@
 import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber/native';
 import type { Group, Object3D } from 'three';
 import { EdgesGeometry, Euler, MathUtils } from 'three';
 import { RoundedBoxGeometry } from 'three-stdlib';
 import type { DieValue } from '../domain/die-value';
+import { useFrame } from '../lib/r3f';
 
 interface DieProps {
   value: DieValue;

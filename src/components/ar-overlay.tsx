@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
-import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 import { IS_PRE_RELEASE } from '../lib/app-info';
+import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 
 const isDebugBuild = __DEV__ || IS_PRE_RELEASE;
 
