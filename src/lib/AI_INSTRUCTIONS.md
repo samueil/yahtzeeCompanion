@@ -58,6 +58,25 @@ Parses the raw YOLOv8 TFLite output tensor into a list of detected dice.
 
 **Coordinate denormalisation:** normalised coords are multiplied by `cropSize` (the on-screen pixel size of the square crop) and offset by `cropY` / `offsetX` to get absolute screen positions.
 
-**NMS:** detections are sorted by confidence descending, then any box whose top-left corner (`x`/`y`) is within 30px (in both axes) of an already-accepted box's top-left corner is dropped as a duplicate. Note: comparing top-left corners is a known approximation — comparing centres would be more geometrically correct for NMS (two boxes of different sizes with the same centre would compare differently) but the current approach works well enough in practice.
+**NMS:** detections are sorted by confidence descending, then any box whose centre is within 30px (in both axes) of an already-accepted box's centre is dropped as a duplicate.
 
 **`confidenceThreshold`** is set by the caller (currently `0.15` in `DiceScanner`). Tune it there, not here.
+
+---
+
+## dice-tracker.ts
+
+Stateful tracking of dice identities across multiple frames to enable stabilization and smoothing. Functions are marked `'worklet'` and run on the worklet thread.
+
+### `updateDiceTracks(state: TrackerState, currentDetections: DiceDetection[])`
+
+The core tracking loop. Links raw detections from `processDiceFrame` to persistent IDs.
+
+1.  **Constellation Matching:** Predicts global camera movement (pan) by finding the translation vector that aligns the most existing tracks with new detections. This prevents "ghosting" during fast movement.
+2.  **Global Matching:** Uses a distance matrix to match tracks to new detections based on the closest pairs globally. This prevents "ID stealing" where a missing die's ID is greedily taken by a neighbor.
+3.  **History & Voting:** Each die maintains a stack of the last 10 frames. The reported `value` is the **mode** (most frequent) of this history, filtering out ML flickering.
+4.  **Revival Logic:** Dice that are missing for up to 5 frames are kept in internal memory (but not rendered). If they reappear, they reconnect to their original ID and history. Mark "missing" frames as `isPhantom: true` so they don't skew the voting history.
+5.  **Manual Overrides:** If a detection has an `overrideValue`, it is respected immediately, bypassing the voting logic.
+
+Returns a new `TrackerState` (to be stored in a `SharedValue`) and a list of `stabilizedDetections` (only containing dice physically present in the current frame).
+

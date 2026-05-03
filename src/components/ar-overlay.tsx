@@ -58,8 +58,8 @@ export const AROverlay = ({
 
         return (
           <View
-            key={index}
-            testID={`detection-box-${index}`}
+            key={det.id ?? index}
+            testID={`detection-box-${det.id ?? index}`}
             className="absolute items-center justify-center border-2"
             style={{
               left: det.x,

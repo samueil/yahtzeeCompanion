@@ -28,8 +28,13 @@ export function createInitialTrackerState(): TrackerState {
 
 function getMostFrequentValue(history: DiceDetection[]): DieValue {
   'worklet';
-  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  if (history.length === 0) {
+    throw new Error('getMostFrequentValue called with empty history');
+  }
+
+  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   let maxCount = 0;
+  // Initialize with the most recent actual value as a fallback
   let mostFrequentValue = history[history.length - 1].value;
 
   for (const det of history) {
@@ -42,7 +47,6 @@ function getMostFrequentValue(history: DiceDetection[]): DieValue {
 
   return mostFrequentValue;
 }
-
 export function updateDiceTracks(
   state: TrackerState,
   currentDetections: DiceDetection[],
@@ -207,21 +211,9 @@ export function updateDiceTracks(
     if (!matchedTracks.has(tIdx)) {
       const track = state.tracks[tIdx];
       if (track.missingFrames < MAX_MISSING_FRAMES) {
-        const lastSeen = track.history[track.history.length - 1];
-        const shiftedLastSeen: DiceDetection = {
-          ...lastSeen,
-          x: lastSeen.x + bestTx,
-          y: lastSeen.y + bestTy,
-        };
-
-        const newHistory = [...track.history, shiftedLastSeen];
-        if (newHistory.length > HISTORY_SIZE) {
-          newHistory.shift();
-        }
-
         newTracks.push({
           id: track.id,
-          history: newHistory,
+          history: track.history,
           missingFrames: track.missingFrames + 1,
         });
       }
