@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Canvas } from '@react-three/fiber/native';
 import {
   CalculatorIcon,
   CameraIcon,
@@ -15,6 +14,7 @@ import { DiceScanner, Die } from './src/components';
 import { CATEGORIES } from './src/constants/categories';
 import type { Category } from './src/domain/category';
 import type { DieValue } from './src/domain/die-value';
+import { Canvas } from './src/lib/r3f';
 import { calculatePotentialScore } from './src/lib/scoring';
 import { colors } from './src/theme/colors';
 
