@@ -92,23 +92,22 @@ export function processDiceFrame({
     }
   }
 
+  const anchorStride = isTransposed ? 1 : numFeatures;
+  const featureStride = isTransposed ? numAnchors : 1;
+
   const detectionsArr: DiceDetection[] = [];
 
+  const classOffset = 4;
+  const numClasses = 6;
+
   for (let i = 0; i < numAnchors; i++) {
+    const anchorOff = i * anchorStride;
     let maxProb = 0;
     let classIdx = -1;
 
-    // For an 11-feature YOLOv8 model, usually [x, y, w, h] are indices 0-3.
-    // The next 6 are the classes (indices 4-9).
-    // The 11th feature is likely an empty padding class to align memory or an objectness score we ignore.
-    const classOffset = 4;
-    const numClasses = 6;
-
+    // Check dice classes
     for (let c = 0; c < numClasses; c++) {
-      const prob = isTransposed
-        ? outputTensor[(classOffset + c) * numAnchors + i]
-        : outputTensor[i * numFeatures + (classOffset + c)];
-
+      const prob = outputTensor[anchorOff + (classOffset + c) * featureStride];
       if (prob > maxProb) {
         maxProb = prob;
         classIdx = c;
@@ -116,28 +115,15 @@ export function processDiceFrame({
     }
 
     if (maxProb > confidenceThreshold) {
-      // Normalized coordinates
-      const cx = isTransposed
-        ? outputTensor[0 * numAnchors + i]
-        : outputTensor[i * numFeatures + 0];
-      const cy = isTransposed
-        ? outputTensor[1 * numAnchors + i]
-        : outputTensor[i * numFeatures + 1];
-      const w = isTransposed
-        ? outputTensor[2 * numAnchors + i]
-        : outputTensor[i * numFeatures + 2];
-      const h = isTransposed
-        ? outputTensor[3 * numAnchors + i]
-        : outputTensor[i * numFeatures + 3];
-
-      // Assuming normalized outputs (0.0 - 1.0)
-      // Since we cropped the camera feed into a perfect 1:1 square before passing it
-      // to the model, `cx`, `cy`, `w`, and `h` are percentages of that cropped square!
+      const cx = outputTensor[anchorOff + 0 * featureStride];
+      const cy = outputTensor[anchorOff + 1 * featureStride];
+      const w = outputTensor[anchorOff + 2 * featureStride];
+      const h = outputTensor[anchorOff + 3 * featureStride];
 
       const realW = w * cropSize;
       const realH = h * cropSize;
-      const realCx = cx * cropSize + offsetX; // Apply horizontal offset if the Camera component overflows the screen width
-      const realCy = cy * cropSize + cropY; // Push the Y down because the crop was centered vertically
+      const realCx = cx * cropSize + offsetX;
+      const realCy = cy * cropSize + cropY;
 
       detectionsArr.push({
         x: realCx - realW / 2,
@@ -156,9 +142,16 @@ export function processDiceFrame({
 
   for (const det of detectionsArr) {
     let isDuplicate = false;
+    const detCx = det.x + det.width / 2;
+    const detCy = det.y + det.height / 2;
+
     for (const finalDet of finalDetections) {
-      const dx = Math.abs(det.x - finalDet.x);
-      const dy = Math.abs(det.y - finalDet.y);
+      const finalDetCx = finalDet.x + finalDet.width / 2;
+      const finalDetCy = finalDet.y + finalDet.height / 2;
+
+      const dx = Math.abs(detCx - finalDetCx);
+      const dy = Math.abs(detCy - finalDetCy);
+
       if (dx < 30 && dy < 30) {
         isDuplicate = true;
         break;

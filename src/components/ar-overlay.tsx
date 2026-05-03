@@ -2,6 +2,9 @@ import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
 import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
+import { IS_PRE_RELEASE } from '../lib/app-info';
+
+const isDebugBuild = __DEV__ || IS_PRE_RELEASE;
 
 interface AROverlayProps {
   detections: DiceDetection[];
@@ -54,8 +57,8 @@ export const AROverlay = ({
 
         return (
           <View
-            key={index}
-            testID={`detection-box-${index}`}
+            key={det.id ?? index}
+            testID={`detection-box-${det.id ?? index}`}
             className="absolute items-center justify-center border-2"
             style={{
               left: det.x,
@@ -67,6 +70,13 @@ export const AROverlay = ({
             }}
           >
             <Text className="text-xs font-bold text-white">{det.value}</Text>
+            {isDebugBuild && det.id && (
+              <View className="absolute -bottom-5 -right-2 rounded bg-black/60 px-1 py-0.5">
+                <Text className="text-[10px] text-white">
+                  #{det.id.replace('die-', '')} [{det.historyLength}/10]
+                </Text>
+              </View>
+            )}
           </View>
         );
       })}

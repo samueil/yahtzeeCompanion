@@ -8,6 +8,7 @@ import {
   useFrameProcessor,
 } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
+import type { ISharedValue } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
 import { AROverlay } from './ar-overlay';
 import { CaptureButton } from './capture-button';
@@ -20,6 +21,11 @@ import {
   CONFIDENCE_THRESHOLD,
   processDiceFrame,
 } from '../lib/dice-processor';
+import {
+  createInitialTrackerState,
+  updateDiceTracks,
+} from '../lib/dice-tracker';
+import type { TrackerState } from '../lib/dice-tracker';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -61,6 +67,11 @@ export const DiceScanner = ({
     height: number;
   } | null>(null);
 
+  // Initialize the tracker state once per mount and persist it across renders
+  const [trackerState] = React.useState<ISharedValue<TrackerState>>(() =>
+    Worklets.createSharedValue(createInitialTrackerState()),
+  );
+
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
@@ -100,7 +111,7 @@ export const DiceScanner = ({
           const outputTensor = outputs[0] as Float32Array;
           const outputShape = tfliteModel.outputs[0].shape;
 
-          const finalDetections = processDiceFrame({
+          const rawDetections = processDiceFrame({
             outputTensor,
             outputShape,
             cropY: mapping.screenCropY,
@@ -109,11 +120,32 @@ export const DiceScanner = ({
             confidenceThreshold: CONFIDENCE_THRESHOLD,
           });
 
-          setDetectionsJS(finalDetections);
+          const { state: newState, stabilizedDetections } = updateDiceTracks(
+            trackerState.value,
+            rawDetections,
+          );
+          trackerState.value = newState;
 
-          if (finalDetections.length >= neededCount) {
+          // Sort detections by priority:
+          // 1. Manual overrides first
+          // 2. Most stable (highest historyLength) second
+          // 3. Highest confidence as tie-breaker
+          const sortedDetections = [...stabilizedDetections].sort((a, b) => {
+            if (a.overrideValue && !b.overrideValue) return -1;
+            if (!a.overrideValue && b.overrideValue) return 1;
+
+            if ((b.historyLength || 0) !== (a.historyLength || 0)) {
+              return (b.historyLength || 0) - (a.historyLength || 0);
+            }
+
+            return b.confidence - a.confidence;
+          });
+
+          setDetectionsJS(sortedDetections);
+
+          if (sortedDetections.length >= neededCount) {
             setFinalValuesJS(
-              finalDetections.slice(0, neededCount).map((d) => d.value),
+              sortedDetections.slice(0, neededCount).map((d) => d.value),
             );
           }
         } catch (error: any) {
