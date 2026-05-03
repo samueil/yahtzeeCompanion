@@ -55,19 +55,26 @@ export function updateDiceTracks(
   let bestTx = 0;
   let bestTy = 0;
 
-  if (state.tracks.length > 0 && currentDetections.length > 0) {
+  // Filter to active tracks to avoid generating hypotheses from ghosts
+  const activeTracks = state.tracks.filter((t) => t.missingFrames === 0);
+
+  if (activeTracks.length > 0 && currentDetections.length > 0) {
     let maxScore = -1;
     // Always evaluate the "no movement" hypothesis first.
-    // We give it a slight artificial boost so that if it ties with a random shift,
-    // we prefer to assume the camera didn't move.
     const hypotheses = [{ tx: 0, ty: 0, isZero: true }];
 
-    // Generate translation hypotheses from all pairs of old track -> new detection
-    for (const track of state.tracks) {
+    // Optimization: Only use the top 10 most confident new detections to generate hypotheses
+    // to prevent O(N^4) explosion if there is heavy noise/clutter.
+    const reliableDetections = [...currentDetections]
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 10);
+
+    // Generate translation hypotheses from all pairs of active track -> reliable detection
+    for (const track of activeTracks) {
       const tLast = track.history[track.history.length - 1];
       const tCx = tLast.x + tLast.width / 2;
       const tCy = tLast.y + tLast.height / 2;
-      for (const det of currentDetections) {
+      for (const det of reliableDetections) {
         hypotheses.push({
           tx: det.x + det.width / 2 - tCx,
           ty: det.y + det.height / 2 - tCy,
@@ -77,11 +84,14 @@ export function updateDiceTracks(
     }
 
     // Score each hypothesis by how many dice align with it
+    const perfectScore = activeTracks.length;
+
     for (const hyp of hypotheses) {
       let score = hyp.isZero ? 0.5 : 0; // Bias towards staying still
       const claimedDetections = new Set<number>();
+      let rawMatches = 0;
 
-      for (const track of state.tracks) {
+      for (const track of activeTracks) {
         const tLast = track.history[track.history.length - 1];
         const predictedCx = tLast.x + tLast.width / 2 + hyp.tx;
         const predictedCy = tLast.y + tLast.height / 2 + hyp.ty;
@@ -99,6 +109,7 @@ export function updateDiceTracks(
 
           if (dist < TRACKING_DISTANCE_THRESHOLD) {
             score += 1;
+            rawMatches += 1;
             // Small tie-breaker to favor hypotheses that preserve face values
             if (det.value === tLast.value) {
               score += 0.1;
@@ -109,7 +120,7 @@ export function updateDiceTracks(
           }
         }
 
-        // If a hypothesis causes an old track to completely miss any new detections,
+        // If a hypothesis causes an active track to completely miss any new detections,
         // penalize it slightly to prefer hypotheses that match more of the total constellation.
         if (!matched) {
           score -= 0.2;
@@ -121,9 +132,14 @@ export function updateDiceTracks(
         bestTx = hyp.tx;
         bestTy = hyp.ty;
       }
+
+      // Early short-circuit: If we perfectly matched all active tracks, we don't need to check worse hypotheses.
+      // We subtract the 0.5 zero-bias from maxScore to see if we hit the raw perfect score.
+      if (Math.floor(maxScore) >= perfectScore && rawMatches === perfectScore) {
+        break;
+      }
     }
   }
-
   // --- Step 1: Match Tracks using Predicted Positions ---
   for (const track of state.tracks) {
     let bestMatchIdx = -1;
@@ -195,10 +211,10 @@ export function updateDiceTracks(
   let newNextId = state.nextId;
   for (const det of unmatchedDetections) {
     const id = `die-${newNextId++}`;
-    det.id = id;
+    const newDetection = { ...det, id };
     newTracks.push({
       id,
-      history: [det],
+      history: [newDetection],
       missingFrames: 0,
     });
   }
@@ -207,9 +223,9 @@ export function updateDiceTracks(
   // We ONLY return tracks that were physically matched or newly created in THIS frame.
   // We do NOT return "missing" tracks (missingFrames > 0), so we don't draw ghost overlays.
   // Their history is still kept in the `state` so they can be re-linked if they reappear.
-  const activeTracks = newTracks.filter((t) => t.missingFrames === 0);
+  const visibleTracks = newTracks.filter((t) => t.missingFrames === 0);
 
-  const stabilizedDetections = activeTracks.map((t) => {
+  const stabilizedDetections = visibleTracks.map((t) => {
     const latest = t.history[t.history.length - 1];
 
     if (latest.overrideValue) {

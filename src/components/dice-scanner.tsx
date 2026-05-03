@@ -65,7 +65,14 @@ export const DiceScanner = ({
     height: number;
   } | null>(null);
 
-  const trackerState = Worklets.createSharedValue(createInitialTrackerState());
+  // Initialize the tracker state once and persist it across renders
+  const trackerStateRef = React.useRef<any>(null);
+  if (trackerStateRef.current === null) {
+    trackerStateRef.current = Worklets.createSharedValue(
+      createInitialTrackerState(),
+    );
+  }
+  const trackerState = trackerStateRef.current;
 
   const frameProcessor = useFrameProcessor(
     (frame) => {

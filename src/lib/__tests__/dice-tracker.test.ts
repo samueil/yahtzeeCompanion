@@ -1,17 +1,18 @@
 import type { DiceDetection } from '../../domain/dice-detection';
+import type { DieValue } from '../../domain/die-value';
 import { createInitialTrackerState, updateDiceTracks } from '../dice-tracker';
 
 describe('dice-tracker', () => {
   const mockDetection = (
     x: number,
     y: number,
-    value: number = 1,
+    value: DieValue = 1,
   ): DiceDetection => ({
     x,
     y,
     width: 50,
     height: 50,
-    value: value as any,
+    value,
     confidence: 0.9,
   });
 
@@ -110,7 +111,7 @@ describe('dice-tracker', () => {
     const state = createInitialTrackerState();
 
     const detection = mockDetection(10, 10, 6);
-    detection.overrideValue = 1 as any;
+    detection.overrideValue = 1;
 
     const { stabilizedDetections } = updateDiceTracks(state, [detection]);
 
