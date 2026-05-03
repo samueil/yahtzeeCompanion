@@ -75,8 +75,7 @@ The core tracking loop. Links raw detections from `processDiceFrame` to persiste
 1.  **Constellation Matching:** Predicts global camera movement (pan) by finding the translation vector that aligns the most existing tracks with new detections. This prevents "ghosting" during fast movement.
 2.  **Global Matching:** Uses a distance matrix to match tracks to new detections based on the closest pairs globally. This prevents "ID stealing" where a missing die's ID is greedily taken by a neighbor.
 3.  **History & Voting:** Each die maintains a stack of the last 10 frames. The reported `value` is the **mode** (most frequent) of this history, filtering out ML flickering.
-4.  **Revival Logic:** Dice that are missing for up to 5 frames are kept in internal memory (but not rendered). If they reappear, they reconnect to their original ID and history. Mark "missing" frames as `isPhantom: true` so they don't skew the voting history.
+4.  **Revival Logic:** Dice that are missing for up to 5 frames are kept in internal memory (but not rendered). If they reappear, they reconnect to their original ID and history. While a die is missing, no phantom history entry is appended; its existing history is left unchanged.
 5.  **Manual Overrides:** If a detection has an `overrideValue`, it is respected immediately, bypassing the voting logic.
 
 Returns a new `TrackerState` (to be stored in a `SharedValue`) and a list of `stabilizedDetections` (only containing dice physically present in the current frame).
-

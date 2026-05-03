@@ -88,12 +88,9 @@ export function updateDiceTracks(
     }
 
     // Score each hypothesis by how many dice align with it
-    const perfectScore = activeTracks.length;
-
     for (const hyp of hypotheses) {
       let score = hyp.isZero ? 0.5 : 0; // Bias towards staying still
       const claimedDetections = new Set<number>();
-      let rawMatches = 0;
 
       for (const track of activeTracks) {
         const tLast = track.history[track.history.length - 1];
@@ -113,7 +110,6 @@ export function updateDiceTracks(
 
           if (dist < TRACKING_DISTANCE_THRESHOLD) {
             score += 1;
-            rawMatches += 1;
             // Small tie-breaker to favor hypotheses that preserve face values
             if (det.value === tLast.value) {
               score += 0.1;
@@ -135,12 +131,6 @@ export function updateDiceTracks(
         maxScore = score;
         bestTx = hyp.tx;
         bestTy = hyp.ty;
-      }
-
-      // Early short-circuit: If we perfectly matched all active tracks, we don't need to check worse hypotheses.
-      // We subtract the 0.5 zero-bias from maxScore to see if we hit the raw perfect score.
-      if (Math.floor(maxScore) >= perfectScore && rawMatches === perfectScore) {
-        break;
       }
     }
   }
