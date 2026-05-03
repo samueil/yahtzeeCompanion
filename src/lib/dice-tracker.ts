@@ -185,8 +185,10 @@ export function updateDiceTracks(
     matchedDetections.add(match.detIdx);
 
     const track = state.tracks[match.trackIdx];
-    const matchedDetection = unmatchedDetections[match.detIdx];
-    matchedDetection.id = track.id;
+    const matchedDetection = {
+      ...unmatchedDetections[match.detIdx],
+      id: track.id,
+    };
 
     const newHistory = [...track.history, matchedDetection];
     if (newHistory.length > HISTORY_SIZE) {

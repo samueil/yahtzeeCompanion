@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import { useCameraPermissions } from '../../hooks/use-camera-permissions';
+import type { TrackerState } from '../../lib/dice-tracker';
 import { DiceScanner } from '../dice-scanner';
 
 // Mock the native modules and hooks
@@ -14,8 +15,12 @@ jest.mock('react-native-vision-camera', () => ({
 
 jest.mock('react-native-worklets-core', () => ({
   Worklets: {
-    createRunOnJS: (fn: any) => fn,
-    createSharedValue: (val: any) => ({ value: val }),
+    createRunOnJS: <TArgs extends unknown[], TResult>(
+      fn: (...args: TArgs) => TResult,
+    ) => fn,
+    createSharedValue: (val: TrackerState) => ({
+      value: val,
+    }),
   },
 }));
 

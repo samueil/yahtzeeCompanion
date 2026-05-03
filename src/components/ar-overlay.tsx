@@ -4,7 +4,8 @@ import type { DiceDetection } from '../domain/dice-detection';
 import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 
 const packageJson = require('../../package.json');
-const isDebugBuild = __DEV__ || packageJson.version.includes('-dev');
+const isDebugBuild =
+  __DEV__ || (packageJson as { version: string }).version.includes('-dev');
 
 interface AROverlayProps {
   detections: DiceDetection[];

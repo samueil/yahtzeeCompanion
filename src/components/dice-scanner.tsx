@@ -8,6 +8,7 @@ import {
   useFrameProcessor,
 } from 'react-native-vision-camera';
 import { Worklets } from 'react-native-worklets-core';
+import type { ISharedValue } from 'react-native-worklets-core';
 import { useResizePlugin } from 'vision-camera-resize-plugin';
 import { AROverlay } from './ar-overlay';
 import { CaptureButton } from './capture-button';
@@ -24,6 +25,7 @@ import {
   createInitialTrackerState,
   updateDiceTracks,
 } from '../lib/dice-tracker';
+import type { TrackerState } from '../lib/dice-tracker';
 
 interface DiceScannerProps {
   neededCount: number;
@@ -66,7 +68,7 @@ export const DiceScanner = ({
   } | null>(null);
 
   // Initialize the tracker state once and persist it across renders
-  const trackerStateRef = React.useRef<any>(null);
+  const trackerStateRef = React.useRef<ISharedValue<TrackerState> | null>(null);
   if (trackerStateRef.current === null) {
     trackerStateRef.current = Worklets.createSharedValue(
       createInitialTrackerState(),
@@ -128,11 +130,26 @@ export const DiceScanner = ({
           );
           trackerState.value = newState;
 
-          setDetectionsJS(stabilizedDetections);
+          // Sort detections by priority:
+          // 1. Manual overrides first
+          // 2. Most stable (highest historyLength) second
+          // 3. Highest confidence as tie-breaker
+          const sortedDetections = [...stabilizedDetections].sort((a, b) => {
+            if (a.overrideValue && !b.overrideValue) return -1;
+            if (!a.overrideValue && b.overrideValue) return 1;
 
-          if (stabilizedDetections.length >= neededCount) {
+            if ((b.historyLength || 0) !== (a.historyLength || 0)) {
+              return (b.historyLength || 0) - (a.historyLength || 0);
+            }
+
+            return b.confidence - a.confidence;
+          });
+
+          setDetectionsJS(sortedDetections);
+
+          if (sortedDetections.length >= neededCount) {
             setFinalValuesJS(
-              stabilizedDetections.slice(0, neededCount).map((d) => d.value),
+              sortedDetections.slice(0, neededCount).map((d) => d.value),
             );
           }
         } catch (error: any) {
