@@ -2,10 +2,9 @@ import React, { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
 import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
+import { IS_PRE_RELEASE } from '../lib/app-info';
 
-const packageJson = require('../../package.json');
-const isDebugBuild =
-  __DEV__ || (packageJson as { version: string }).version.includes('-dev');
+const isDebugBuild = __DEV__ || IS_PRE_RELEASE;
 
 interface AROverlayProps {
   detections: DiceDetection[];
