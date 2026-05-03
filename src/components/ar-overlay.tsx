@@ -3,6 +3,9 @@ import { Text, View } from 'react-native';
 import type { DiceDetection } from '../domain/dice-detection';
 import { CONFIDENCE_THRESHOLD } from '../lib/dice-processor';
 
+const packageJson = require('../../package.json');
+const isDebugBuild = __DEV__ || packageJson.version.includes('-dev');
+
 interface AROverlayProps {
   detections: DiceDetection[];
   targetCount: number;
@@ -67,6 +70,13 @@ export const AROverlay = ({
             }}
           >
             <Text className="text-xs font-bold text-white">{det.value}</Text>
+            {isDebugBuild && det.id && (
+              <View className="absolute -bottom-5 -right-2 rounded bg-black/60 px-1 py-0.5">
+                <Text className="text-[10px] text-white">
+                  #{det.id.replace('die-', '')} [{det.historyLength}/10]
+                </Text>
+              </View>
+            )}
           </View>
         );
       })}

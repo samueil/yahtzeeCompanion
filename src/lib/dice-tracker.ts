@@ -140,53 +140,72 @@ export function updateDiceTracks(
       }
     }
   }
-  // --- Step 1: Match Tracks using Predicted Positions ---
-  for (const track of state.tracks) {
-    let bestMatchIdx = -1;
-    let minDistance = TRACKING_DISTANCE_THRESHOLD;
+  // --- Step 1: Match Tracks using Predicted Positions (Global Closest Pair) ---
+  // To prevent "ID stealing" (where track 1 steals the detection meant for track 2
+  // just because track 1 was evaluated first), we calculate ALL distances first,
+  // then match the absolute closest pairs globally.
 
+  const distances: { trackIdx: number; detIdx: number; dist: number }[] = [];
+
+  for (let tIdx = 0; tIdx < state.tracks.length; tIdx++) {
+    const track = state.tracks[tIdx];
     const lastSeen = track.history[track.history.length - 1];
-    // Apply the predicted camera movement to the old position
     const predictedCx = lastSeen.x + lastSeen.width / 2 + bestTx;
     const predictedCy = lastSeen.y + lastSeen.height / 2 + bestTy;
 
-    for (let i = 0; i < unmatchedDetections.length; i++) {
-      const det = unmatchedDetections[i];
+    for (let dIdx = 0; dIdx < unmatchedDetections.length; dIdx++) {
+      const det = unmatchedDetections[dIdx];
       const detCx = det.x + det.width / 2;
       const detCy = det.y + det.height / 2;
-
       const dist = Math.sqrt(
         Math.pow(detCx - predictedCx, 2) + Math.pow(detCy - predictedCy, 2),
       );
 
-      if (dist < minDistance) {
-        minDistance = dist;
-        bestMatchIdx = i;
+      if (dist < TRACKING_DISTANCE_THRESHOLD) {
+        distances.push({ trackIdx: tIdx, detIdx: dIdx, dist });
       }
     }
+  }
 
-    if (bestMatchIdx !== -1) {
-      // We found a match! Update the track.
-      const matchedDetection = unmatchedDetections[bestMatchIdx];
-      matchedDetection.id = track.id; // Assign the persistent ID
+  // Sort all possible matches by distance (closest first)
+  distances.sort((a, b) => a.dist - b.dist);
 
-      const newHistory = [...track.history, matchedDetection];
-      if (newHistory.length > HISTORY_SIZE) {
-        newHistory.shift(); // Keep only the last N items
-      }
+  const matchedTracks = new Set<number>();
+  const matchedDetections = new Set<number>();
 
-      newTracks.push({
-        id: track.id,
-        history: newHistory,
-        missingFrames: 0,
-      });
+  for (const match of distances) {
+    if (
+      matchedTracks.has(match.trackIdx) ||
+      matchedDetections.has(match.detIdx)
+    ) {
+      continue; // One of these has already been claimed by a closer match
+    }
 
-      // Remove from unmatched so it isn't matched again
-      unmatchedDetections.splice(bestMatchIdx, 1);
-    } else {
-      // No match found. The die is missing in this frame.
+    matchedTracks.add(match.trackIdx);
+    matchedDetections.add(match.detIdx);
+
+    const track = state.tracks[match.trackIdx];
+    const matchedDetection = unmatchedDetections[match.detIdx];
+    matchedDetection.id = track.id;
+
+    const newHistory = [...track.history, matchedDetection];
+    if (newHistory.length > HISTORY_SIZE) {
+      newHistory.shift();
+    }
+
+    newTracks.push({
+      id: track.id,
+      history: newHistory,
+      missingFrames: 0,
+    });
+  }
+
+  // Handle tracks that didn't find a match (Missing Frames)
+  for (let tIdx = 0; tIdx < state.tracks.length; tIdx++) {
+    if (!matchedTracks.has(tIdx)) {
+      const track = state.tracks[tIdx];
       if (track.missingFrames < MAX_MISSING_FRAMES) {
-        // Shift the "revived" detection by the camera movement so it follows the screen!
+        const lastSeen = track.history[track.history.length - 1];
         const shiftedLastSeen: DiceDetection = {
           ...lastSeen,
           x: lastSeen.x + bestTx,
@@ -205,6 +224,15 @@ export function updateDiceTracks(
         });
       }
     }
+  }
+
+  // Remove the claimed detections from unmatchedDetections so they aren't created as new tracks.
+  // We iterate backwards to avoid messing up indices.
+  const sortedMatchedDetections = Array.from(matchedDetections).sort(
+    (a, b) => b - a,
+  );
+  for (const detIdx of sortedMatchedDetections) {
+    unmatchedDetections.splice(detIdx, 1);
   }
 
   // --- Step 2: Create new tracks for remaining unmatched detections ---
@@ -232,6 +260,7 @@ export function updateDiceTracks(
       return {
         ...latest,
         value: latest.overrideValue,
+        historyLength: t.history.length,
       };
     }
 
@@ -240,6 +269,7 @@ export function updateDiceTracks(
     return {
       ...latest,
       value: stabilizedValue,
+      historyLength: t.history.length,
     };
   });
 

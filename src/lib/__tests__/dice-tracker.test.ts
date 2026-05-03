@@ -107,6 +107,39 @@ describe('dice-tracker', () => {
     expect(res2.stabilizedDetections.map((d) => d.id)).toContain('die-2');
   });
 
+  it('prevents greedy ID swapping when a nearby die is removed', () => {
+    let state = createInitialTrackerState();
+
+    // Frame 1: Three dice close to each other
+    // Track 1 is at x=100. Track 2 is at x=150. Track 3 is at x=200.
+    const res1 = updateDiceTracks(state, [
+      mockDetection(100, 100), // die-1
+      mockDetection(150, 100), // die-2
+      mockDetection(200, 100), // die-3
+    ]);
+    state = res1.state;
+
+    // Frame 2: The first die (die-1 at x=100) is removed.
+    // If the algorithm is greedy, Track 1 might steal the detection at x=150
+    // before Track 2 gets a chance to claim it.
+    const res2 = updateDiceTracks(state, [
+      mockDetection(150, 100),
+      mockDetection(200, 100),
+    ]);
+
+    expect(res2.stabilizedDetections).toHaveLength(2);
+    const remainingIds = res2.stabilizedDetections.map((d) => d.id);
+
+    // It should keep die-2 and die-3. die-1 should be missing.
+    expect(remainingIds).not.toContain('die-1');
+    expect(remainingIds).toContain('die-2');
+    expect(remainingIds).toContain('die-3');
+
+    // Verify that die-2 is still attached to the detection at x=150
+    const die2 = res2.stabilizedDetections.find((d) => d.id === 'die-2');
+    expect(die2?.x).toBe(150);
+  });
+
   it('respects manual overrides immediately', () => {
     const state = createInitialTrackerState();
 
