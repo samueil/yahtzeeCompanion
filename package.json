@@ -25,7 +25,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-vision-camera": "^4.7.3",
     "react-native-web": "^0.21.0",
-    "react-native-worklets": "^0.8.1",
+    "react-native-worklets": "^0.8.3",
     "react-native-worklets-core": "^1.6.3",
     "tailwindcss": "^3.4.19",
     "three": "^0.182.0",
