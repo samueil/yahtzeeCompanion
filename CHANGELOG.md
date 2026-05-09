@@ -1,3 +1,18 @@
+## [1.0.1] - 2026-05-09
+- chore: update tflite and dependencies (#68)
+- feat: update tensorflow model (#63)
+- build(deps-dev): bump prettier-plugin-tailwindcss from 0.7.3 to 0.8.0 (#61)
+- feat: Temporal tracking of dice in video frames enhancement (#62)
+- feat: update tflite-model and improve testing (#56)
+- build(deps): bump actions/create-github-app-token from 1 to 3 (#51)
+- build(deps): bump actions/setup-node from 4 to 6 (#50)
+- build(deps): bump actions/upload-artifact from 4 to 7 (#49)
+- build(deps): bump actions/github-script from 7 to 9 (#52)
+- feat: Mode Toggle and 3D Dice Enhancements (#42)
+- chore: improve release messages (#47)
+- chore: remove auto run of ios deploy (#45)
+- chore: begin development of 1.0.1-dev [skip ci]
+
 ## [1.0.0] - 2026-04-20
 - chore: add github-app-token to release workflow (#44)
 - chore: init expo project (#43)
