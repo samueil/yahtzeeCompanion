@@ -59,5 +59,6 @@
   "private": true,
   "overrides": {
     "three": "$three"
-  }
+  },
+  "packageManager": "npm@11.12.1"
 }
