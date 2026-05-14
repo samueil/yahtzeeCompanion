@@ -15,7 +15,10 @@ permissions:
 
 jobs:
   repair-lockfile:
-    if: github.event.pull_request.user.login == 'dependabot[bot]' && startsWith(github.event.pull_request.head.ref, 'dependabot/npm_and_yarn/') && github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/npm_and_yarn/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     name: Regenerate package-lock.json
     runs-on: ubuntu-latest
 
@@ -48,6 +51,8 @@ jobs:
 
       - name: Commit repaired package-lock.json
         run: |
+          set -euo pipefail
+
           if git diff --quiet -- package-lock.json; then
             echo "No package-lock.json changes detected."
             exit 0
