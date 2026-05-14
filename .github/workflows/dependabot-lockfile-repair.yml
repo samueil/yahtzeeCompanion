@@ -46,8 +46,10 @@ jobs:
 
       - name: Regenerate npm lockfile
         run: |
+          set -euo pipefail
           rm -rf node_modules package-lock.json
           npm install
+          test -f package-lock.json
 
       - name: Commit repaired package-lock.json
         run: |
