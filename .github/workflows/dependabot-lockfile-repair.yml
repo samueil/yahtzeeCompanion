@@ -1,0 +1,67 @@
+name: Dependabot npm lockfile repair
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  repair-lockfile:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/npm_and_yarn/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    name: Regenerate package-lock.json
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Dependabot PR branch
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.20.0'
+          cache: 'npm'
+
+      - name: Install npm 11.12.1
+        run: npm install -g npm@11.12.1
+
+      - name: Show tool versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Regenerate npm lockfile
+        run: |
+          set -euo pipefail
+          rm -rf node_modules package-lock.json
+          npm install
+          test -f package-lock.json
+
+      - name: Commit repaired package-lock.json
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- package-lock.json; then
+            echo "No package-lock.json changes detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: regenerate package-lock.json for Dependabot"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
