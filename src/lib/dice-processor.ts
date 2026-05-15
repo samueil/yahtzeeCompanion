@@ -1,7 +1,7 @@
 import type { DiceDetection } from '../domain/dice-detection';
 import type { DieValue } from '../domain/die-value';
 
-export const CONFIDENCE_THRESHOLD = 0.15;
+export const CONFIDENCE_THRESHOLD = 0.25;
 
 export interface ProcessDiceFrameOptions {
   outputTensor: Float32Array;
