@@ -87,7 +87,7 @@ jobs:
         run: echo "$JSON_DATA" > android/app/google-services.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -179,7 +179,7 @@ jobs:
         run: echo "$XML_DATA" > GoogleService-Info.plist
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
